@@ -68,7 +68,7 @@ export const OrderConfirmation: React.FC = () => {
           Order Confirmed!
         </h1>
         <p className="text-sm sm:text-base text-charcoal-800/80 mt-2 max-w-lg mx-auto">
-          Thank you for choosing Ceylon Flora & Seeds. Your order has been registered and is being
+          Thank you for choosing FLORA SEEDS. Your order has been registered and is being
           prepared for dispatch.
         </p>
       </div>

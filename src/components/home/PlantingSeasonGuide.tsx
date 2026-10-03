@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../../context/StoreContext';
+import { BRAND_CONFIG } from '../../data/products';
 import { CloudRain, Sun, Calendar, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export const PlantingSeasonGuide: React.FC = () => {
@@ -75,7 +76,7 @@ export const PlantingSeasonGuide: React.FC = () => {
               </button>
 
               <span className="text-xs text-agro-200/70">
-                Need guidance? Ask our agronomist via WhatsApp: <strong>+94 77 123 4567</strong>
+                Need guidance? Ask our agronomist via WhatsApp: <strong>{BRAND_CONFIG.hotline}</strong>
               </span>
             </div>
           </div>

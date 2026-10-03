@@ -44,7 +44,7 @@ export const WhyChooseUs: React.FC = () => {
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-agro-100 text-agro-800 text-xs font-bold mb-3 border border-agro-200">
             <Sparkles className="w-3.5 h-3.5 text-gold-600" />
-            <span>The Ceylon Flora Advantage</span>
+            <span>The FLORA SEEDS Advantage</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-extrabold text-charcoal-900 font-display">

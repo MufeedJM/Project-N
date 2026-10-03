@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { inquiryService } from '../../services/inquiryService';
 import { useStore } from '../../context/StoreContext';
-import { INITIAL_PRODUCTS } from '../../data/products';
+import { BRAND_CONFIG, INITIAL_PRODUCTS } from '../../data/products';
 import {
   MessageCircleQuestion,
   Send,
@@ -16,8 +16,6 @@ export const QuestionForm: React.FC = () => {
   const { addToast } = useStore();
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
     phone: '',
     varietyInterest: '',
     message: '',
@@ -46,8 +44,6 @@ export const QuestionForm: React.FC = () => {
       setSubmitted(true);
       addToast('Question Submitted', result.message, 'success');
       setFormData({
-        name: '',
-        email: '',
         phone: '',
         varietyInterest: '',
         message: '',
@@ -89,8 +85,8 @@ export const QuestionForm: React.FC = () => {
                 Question Received!
               </h3>
               <p className="text-xs text-charcoal-800/80 mt-1 leading-relaxed">
-                Thank you! Our agronomist has received your message and will email you detailed
-                guidance shortly.
+                Thank you! Our team has received your question and will review it. We will follow up
+                by phone if you provided a number.
               </p>
               <button
                 onClick={() => setSubmitted(false)}
@@ -109,40 +105,6 @@ export const QuestionForm: React.FC = () => {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Name */}
-                <div>
-                  <label className="block text-xs font-bold text-charcoal-900 mb-1">
-                    Your Name <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="e.g. Mahinda Silva"
-                    className="w-full px-4 py-2.5 rounded-xl border border-earth-200 bg-earth-50/50 text-xs sm:text-sm text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-agro-500/20 focus:border-agro-600"
-                  />
-                </div>
-
-                {/* Email (Required) */}
-                <div>
-                  <label className="block text-xs font-bold text-charcoal-900 mb-1">
-                    Email Address <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="e.g. mahinda@gmail.com"
-                    className="w-full px-4 py-2.5 rounded-xl border border-earth-200 bg-earth-50/50 text-xs sm:text-sm text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-agro-500/20 focus:border-agro-600"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Phone (Optional) */}
                 <div>
                   <label className="block text-xs font-bold text-charcoal-900 mb-1">
@@ -153,7 +115,7 @@ export const QuestionForm: React.FC = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder="e.g. 077 123 4567"
+                    placeholder="Enter your phone number"
                     className="w-full px-4 py-2.5 rounded-xl border border-earth-200 bg-earth-50/50 text-xs sm:text-sm text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-agro-500/20 focus:border-agro-600"
                   />
                 </div>
@@ -217,7 +179,7 @@ export const QuestionForm: React.FC = () => {
                 <span className="text-[11px] text-gray-500 flex items-center justify-center gap-1.5">
                   <PhoneCall className="w-3.5 h-3.5 text-agro-700" />
                   Urgent farming query? WhatsApp our agronomist directly at{' '}
-                  <strong className="text-agro-800">+94 77 123 4567</strong>
+                  <strong className="text-agro-800">{BRAND_CONFIG.hotline}</strong>
                 </span>
               </div>
             </form>

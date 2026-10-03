@@ -443,7 +443,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
       {/* Why Choose Our Seeds Banner */}
       <div className="mt-12 bg-gradient-to-r from-agro-900 via-agro-800 to-agro-950 text-white rounded-3xl p-8 sm:p-10 shadow-soft-xl">
         <h3 className="text-xl sm:text-2xl font-bold font-display text-white mb-2">
-          Why Choose Ceylon Flora Seeds?
+          Why Choose FLORA SEEDS?
         </h3>
         <p className="text-xs sm:text-sm text-agro-200 max-w-2xl mb-6">
           Every seed lot undergoes rigorous purity and germination trials at our agricultural test

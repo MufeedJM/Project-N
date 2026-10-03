@@ -284,7 +284,7 @@ export const CheckoutPage: React.FC = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="e.g. sunil@gmail.com"
+                      placeholder="example@gmail.com"
                       className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm text-charcoal-900 focus:outline-none focus:ring-2 ${
                         errors.email
                           ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-200'
@@ -305,7 +305,7 @@ export const CheckoutPage: React.FC = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      placeholder="e.g. 077 123 4567"
+                      placeholder="Enter phone number"
                       className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm text-charcoal-900 focus:outline-none focus:ring-2 ${
                         errors.phone
                           ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-200'

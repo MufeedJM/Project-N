@@ -465,12 +465,12 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const BRAND_CONFIG = {
-  brandName: 'Ceylon Flora & Seeds™',
+  brandName: 'FLORA SEEDS',
   tagline: 'Grow Better. Harvest Better.',
   subheading: 'Premium agricultural seeds carefully selected to help Sri Lankan farmers and growers achieve healthier, more bountiful crops.',
-  hotline: '+94 77 123 4567',
-  whatsapp: '+94 77 123 4567',
-  email: 'care@ceylonfloraseeds.lk',
+  hotline: '0702288355',
+  whatsapp: '0702288355',
+  email: 'example@gmail.com',
   address: 'Agro Research Park, Peradeniya Road, Kandy / Colombo Hub, Sri Lanka',
   freeDeliveryThreshold: 3000, // LKR
   standardDeliveryFee: 350, // LKR

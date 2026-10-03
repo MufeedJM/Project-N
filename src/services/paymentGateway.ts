@@ -29,11 +29,11 @@ export interface BankAccountDetails {
 
 export const BANK_DETAILS: BankAccountDetails = {
   bankName: 'Commercial Bank of Ceylon PLC',
-  accountName: 'Ceylon Flora & Seeds (Pvt) Ltd',
+  accountName: 'FLORA SEEDS',
   accountNumber: '8004523910',
   branch: 'Peradeniya / Kandy City Branch',
   swiftCode: 'CCEYLKX',
-  whatsappConfirmation: '+94 77 123 4567',
+  whatsappConfirmation: '0702288355',
 };
 
 // Check if production PayHere credentials are provided via environment variables

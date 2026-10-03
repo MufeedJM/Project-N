@@ -107,7 +107,7 @@ ${itemsSummary}
 *Payment Method:* ${order.paymentMethod.toUpperCase()} (${order.paymentStatus})
 ${order.specialNotes ? `*Special Notes:* ${order.specialNotes}` : ''}
 
-Thank you for cultivating with Ceylon Flora & Seeds Sri Lanka! 🇱🇰`;
+Thank you for cultivating with FLORA SEEDS Sri Lanka! 🇱🇰`;
 
     return encodeURIComponent(message);
   }

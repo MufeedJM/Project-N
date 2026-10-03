@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrandLogo } from './BrandLogo';
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
-import { CATEGORIES } from '../../data/products';
+import { BRAND_CONFIG, CATEGORIES } from '../../data/products';
 import { ProductCategory } from '../../types';
 import {
   ShoppingBag,
@@ -71,13 +71,13 @@ export const Navbar: React.FC = () => {
           </div>
           <div className="flex items-center gap-6 text-agro-200">
             <a
-              href="https://wa.me/94771234567"
+              href={`https://wa.me/${BRAND_CONFIG.whatsapp.replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 hover:text-white transition"
             >
               <PhoneCall className="w-3.5 h-3.5 text-agro-400" />
-              <span>Agri Advisory Hotline: +94 77 123 4567</span>
+              <span>Agri Advisory Hotline: {BRAND_CONFIG.hotline}</span>
             </a>
             <button
               onClick={() => setActiveView('admin')}
@@ -381,7 +381,7 @@ export const Navbar: React.FC = () => {
               </button>
 
               <div className="pt-4 mt-2 border-t border-gray-100 flex items-center justify-between text-xs text-charcoal-800">
-                <span>Agri Hotline: +94 77 123 4567</span>
+                <span>Agri Hotline: {BRAND_CONFIG.hotline}</span>
                 <span className="font-bold text-agro-700">LKR Currency</span>
               </div>
             </div>

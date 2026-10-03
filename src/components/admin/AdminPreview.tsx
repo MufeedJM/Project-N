@@ -83,7 +83,7 @@ export const AdminPreview: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-display font-bold text-lg text-white">
-                  Ceylon Flora Admin Hub
+                  FLORA SEEDS Admin Hub
                 </span>
                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-gold-500/20 text-gold-300 border border-gold-500/30">
                   Ready Architecture
@@ -420,16 +420,16 @@ export const AdminPreview: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {inquiries.map((inq) => (
+              {inquiries.length === 0 ? (
+                <p className="text-sm text-charcoal-800/70">No questions submitted yet.</p>
+              ) : inquiries.map((inq) => (
                 <div
                   key={inq.id}
                   className="bg-white rounded-3xl p-6 border border-agro-100 shadow-soft"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-earth-100 gap-2">
                     <div>
-                      <span className="text-base font-bold text-charcoal-900">{inq.name}</span>
                       <div className="text-xs text-gray-500">
-                        Email: <a href={`mailto:${inq.email}`} className="text-agro-700 hover:underline">{inq.email}</a>
                         {inq.phone && <span> • Phone: {inq.phone}</span>}
                       </div>
                     </div>

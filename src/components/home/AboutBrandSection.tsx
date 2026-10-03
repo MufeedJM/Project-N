@@ -70,7 +70,7 @@ export const AboutBrandSection: React.FC = () => {
 
             {/* Body copy */}
             <p className="mt-6 text-sm sm:text-base text-charcoal-800/85 leading-relaxed">
-              At Ceylon Flora & Seeds, our mission is to empower farmers, home gardeners, and agricultural
+              At FLORA SEEDS, our mission is to empower farmers, home gardeners, and agricultural
               enthusiasts across Sri Lanka with certified, resilient, high-yield seed cultivars.
             </p>
 

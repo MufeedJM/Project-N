@@ -78,10 +78,10 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
               isDark ? 'text-white' : 'text-agro-950'
             }`}
           >
-            Ceylon <span className="text-agro-600 font-extrabold">Flora</span>
+            <span className="text-agro-600 font-extrabold">FLORA</span>
           </span>
           <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-agro-100 text-agro-800 border border-agro-200">
-            Seeds
+            SEEDS
           </span>
         </div>
         {showTagline && (

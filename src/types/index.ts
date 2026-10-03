@@ -84,8 +84,8 @@ export interface Order {
 
 export interface QuestionInquiry {
   id: string;
-  name: string;
-  email: string;
+  name?: string;
+  email?: string;
   phone?: string;
   varietyInterest?: string;
   message: string;
