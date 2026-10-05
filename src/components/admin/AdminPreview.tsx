@@ -36,23 +36,73 @@ export const AdminPreview: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>(() => orderService.getAll());
   const [inquiries, setInquiries] = useState<QuestionInquiry[]>(() => inquiryService.getAll());
 
-  // Editing state for quick stock update
+  // Editing state for inventory details
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<number>(0);
   const [tempStock, setTempStock] = useState<number>(0);
+  const [tempImage, setTempImage] = useState('');
+  const [tempVariety, setTempVariety] = useState('');
+  const [tempQuantity, setTempQuantity] = useState<number>(1);
+  const [tempUnit, setTempUnit] = useState('');
+  const [tempGerminationRate, setTempGerminationRate] = useState<number>(0);
 
   const startEditProduct = (prod: Product) => {
     setEditingProductId(prod.id);
     setTempPrice(prod.price);
     setTempStock(prod.stock);
+    setTempImage(prod.image);
+    setTempVariety(prod.variety);
+    setTempQuantity(prod.quantity);
+    setTempUnit(prod.unit);
+    setTempGerminationRate(prod.germinationRate);
   };
 
   const saveProductEdit = (product: Product) => {
-    const updated = { ...product, price: tempPrice, stock: tempStock };
+    const image = tempImage.trim();
+    const variety = tempVariety.trim();
+    const unit = tempUnit.trim();
+    if (
+      !image ||
+      !variety ||
+      !unit ||
+      !Number.isInteger(tempPrice) ||
+      tempPrice < 0 ||
+      !Number.isInteger(tempStock) ||
+      tempStock < 0 ||
+      !Number.isInteger(tempQuantity) ||
+      tempQuantity < 1 ||
+      !Number.isInteger(tempGerminationRate) ||
+      tempGerminationRate < 0 ||
+      tempGerminationRate > 100
+    ) {
+      addToast(
+        'Invalid Product Details',
+        'Enter an image URL, variety, and unit. Price and stock must be non-negative whole numbers, pack quantity must be at least 1, and germination must be between 0 and 100.',
+        'error'
+      );
+      return;
+    }
+
+    const updated = {
+      ...product,
+      image,
+      gallery: [
+        image,
+        ...product.gallery.filter(
+          (galleryImage) => galleryImage !== product.image && galleryImage !== image
+        ),
+      ],
+      variety,
+      quantity: tempQuantity,
+      unit,
+      price: tempPrice,
+      stock: tempStock,
+      germinationRate: tempGerminationRate,
+    };
     seedService.updateProduct(updated);
     setProducts(seedService.getAll());
     setEditingProductId(null);
-    addToast('Updated', `${product.name} price and stock updated.`, 'success');
+    addToast('Updated', `${product.name} inventory details updated.`, 'success');
   };
 
   const handleStatusChange = (orderId: string, status: Order['orderStatus']) => {
@@ -206,15 +256,35 @@ export const AdminPreview: React.FC = () => {
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
                               <img
-                                src={prod.image}
+                                src={isEditing ? tempImage : prod.image}
                                 alt={prod.name}
                                 className="w-10 h-10 rounded-xl object-cover bg-earth-100 flex-shrink-0"
                               />
                               <div>
                                 <span className="font-bold text-charcoal-900 block">{prod.name}</span>
                                 <span className="text-[11px] text-agro-700 font-semibold">
-                                  {prod.variety}
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={tempVariety}
+                                      onChange={(e) => setTempVariety(e.target.value)}
+                                      aria-label={`${prod.name} variety`}
+                                      className="w-48 px-2 py-1 border rounded bg-white"
+                                    />
+                                  ) : (
+                                    prod.variety
+                                  )}
                                 </span>
+                                {isEditing && (
+                                  <input
+                                    type="url"
+                                    value={tempImage}
+                                    onChange={(e) => setTempImage(e.target.value)}
+                                    aria-label={`${prod.name} photo URL`}
+                                    placeholder="Photo URL"
+                                    className="mt-1 w-48 px-2 py-1 border rounded bg-white"
+                                  />
+                                )}
                               </div>
                             </div>
                           </td>
@@ -226,15 +296,39 @@ export const AdminPreview: React.FC = () => {
                           </td>
 
                           <td className="py-3 px-4 font-medium">
-                            {prod.quantity} {prod.unit}
+                            {isEditing ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={tempQuantity}
+                                  onChange={(e) => setTempQuantity(Number(e.target.value))}
+                                  aria-label={`${prod.name} pack quantity`}
+                                  className="w-16 px-2 py-1 border rounded bg-white"
+                                />
+                                <input
+                                  type="text"
+                                  value={tempUnit}
+                                  onChange={(e) => setTempUnit(e.target.value)}
+                                  aria-label={`${prod.name} pack unit`}
+                                  className="w-16 px-2 py-1 border rounded bg-white"
+                                />
+                              </div>
+                            ) : (
+                              `${prod.quantity} ${prod.unit}`
+                            )}
                           </td>
 
                           <td className="py-3 px-4 font-bold">
                             {isEditing ? (
                               <input
                                 type="number"
+                                min="0"
+                                step="1"
                                 value={tempPrice}
                                 onChange={(e) => setTempPrice(Number(e.target.value))}
+                                aria-label={`${prod.name} price`}
                                 className="w-20 px-2 py-1 border rounded bg-white"
                               />
                             ) : (
@@ -246,8 +340,11 @@ export const AdminPreview: React.FC = () => {
                             {isEditing ? (
                               <input
                                 type="number"
+                                min="0"
+                                step="1"
                                 value={tempStock}
                                 onChange={(e) => setTempStock(Number(e.target.value))}
+                                aria-label={`${prod.name} stock`}
                                 className="w-20 px-2 py-1 border rounded bg-white"
                               />
                             ) : (
@@ -262,7 +359,20 @@ export const AdminPreview: React.FC = () => {
                           </td>
 
                           <td className="py-3 px-4 font-medium text-emerald-700">
-                            {prod.germinationRate}% Viable
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value={tempGerminationRate}
+                                onChange={(e) => setTempGerminationRate(Number(e.target.value))}
+                                aria-label={`${prod.name} germination rate`}
+                                className="w-20 px-2 py-1 border rounded bg-white text-charcoal-900"
+                              />
+                            ) : (
+                              `${prod.germinationRate}% Viable`
+                            )}
                           </td>
 
                           <td className="py-3 px-4 text-right">
@@ -516,20 +626,6 @@ export const AdminPreview: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-3.5 rounded-xl bg-earth-50 border border-earth-200">
-                  <span className="text-gray-500 block">Bank Name:</span>
-                  <span className="font-bold text-charcoal-900">{BANK_DETAILS.bankName}</span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-earth-50 border border-earth-200">
-                  <span className="text-gray-500 block">Account Number:</span>
-                  <span className="font-mono font-bold text-agro-900 text-sm">
-                    {BANK_DETAILS.accountNumber}
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-earth-50 border border-earth-200">
-                  <span className="text-gray-500 block">Branch:</span>
-                  <span className="font-bold text-charcoal-900">{BANK_DETAILS.branch}</span>
-                </div>
                 <div className="p-3.5 rounded-xl bg-earth-50 border border-earth-200">
                   <span className="text-gray-500 block">WhatsApp Slip Verification:</span>
                   <span className="font-bold text-emerald-700">
