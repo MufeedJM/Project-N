@@ -26,6 +26,20 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
   const { addToCart } = useCart();
   const { navigateToCatalog, navigateToCheckout, addToast } = useStore();
 
+  const formatPackSize = (quantity: number, unit: string) => {
+    const normalizedUnit = unit.trim();
+    if (normalizedUnit === 'kg' || normalizedUnit === 'g') {
+      return `${quantity}${normalizedUnit}`;
+    }
+    if (normalizedUnit === 'unit' || normalizedUnit === 'Unit') {
+      return `${quantity}`;
+    }
+    return `${quantity} ${normalizedUnit}`;
+  };
+
+  const isToolProduct = product.category === 'Tools' || product.inventoryType === 'Tool';
+  const showSeedSpecificDetails = !isToolProduct;
+
   const [selectedImage, setSelectedImage] = useState<string>(product.image);
   const [quantity, setQuantity] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<'agronomy' | 'instructions' | 'storage'>('agronomy');
@@ -75,23 +89,23 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
               className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
 
-            {/* Department of Agriculture certified ribbon */}
             {product.departmentApproved && (
               <div className="absolute top-4 left-4 z-10">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-agro-900/90 text-agro-100 text-xs font-bold backdrop-blur-md border border-agro-600/60 shadow-md">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  Sri Lanka Certified Variety
+                  Certified Variety
                 </span>
               </div>
             )}
 
-            {/* Germination rate pill */}
-            <div className="absolute top-4 right-4 z-10">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 text-agro-900 text-xs font-bold shadow-soft">
-                <Sprout className="w-4 h-4 text-emerald-600" />
-                {product.germinationRate}% Germination Tested
-              </span>
-            </div>
+            {!isToolProduct && product.germinationRate > 0 && (
+              <div className="absolute top-4 right-4 z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 text-agro-900 text-xs font-bold shadow-soft">
+                  <Sprout className="w-4 h-4 text-emerald-600" />
+                  {product.germinationRate}% Germination Tested
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Thumbnails */}
@@ -170,7 +184,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
               <div className="text-right">
                 <span className="text-xs text-gray-500 block">Package Size</span>
                 <span className="text-sm font-bold text-agro-900">
-                  {product.quantity} {product.unit} / Packet
+                  {formatPackSize(product.quantity, product.unit)} / Packet
                 </span>
                 <div className="mt-1">
                   {isOutOfStock ? (
@@ -192,33 +206,43 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
             </p>
 
             {/* Agro Quick Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-6">
-              <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
-                <Calendar className="w-4 h-4 text-agro-700 mx-auto mb-1" />
-                <span className="text-[10px] text-gray-500 block">Season</span>
-                <span className="text-xs font-bold text-agro-900">{product.plantingSeason}</span>
-              </div>
+            {showSeedSpecificDetails && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-6">
+                {product.plantingSeason && (
+                  <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
+                    <Calendar className="w-4 h-4 text-agro-700 mx-auto mb-1" />
+                    <span className="text-[10px] text-gray-500 block">Season</span>
+                    <span className="text-xs font-bold text-agro-900">{product.plantingSeason}</span>
+                  </div>
+                )}
 
-              <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
-                <Sprout className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
-                <span className="text-[10px] text-gray-500 block">Germination</span>
-                <span className="text-xs font-bold text-agro-900">{product.germinationRate}% Viable</span>
-              </div>
+                {product.germinationRate > 0 && (
+                  <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
+                    <Sprout className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
+                    <span className="text-[10px] text-gray-500 block">Germination</span>
+                    <span className="text-xs font-bold text-agro-900">{product.germinationRate}% Viable</span>
+                  </div>
+                )}
 
-              <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
-                <Layers className="w-4 h-4 text-earth-700 mx-auto mb-1" />
-                <span className="text-[10px] text-gray-500 block">Depth</span>
-                <span className="text-xs font-bold text-agro-900">{product.sowingDepth}</span>
-              </div>
+                {product.sowingDepth && (
+                  <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
+                    <Layers className="w-4 h-4 text-earth-700 mx-auto mb-1" />
+                    <span className="text-[10px] text-gray-500 block">Depth</span>
+                    <span className="text-xs font-bold text-agro-900">{product.sowingDepth}</span>
+                  </div>
+                )}
 
-              <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
-                <Sparkles className="w-4 h-4 text-gold-600 mx-auto mb-1" />
-                <span className="text-[10px] text-gray-500 block">First Harvest</span>
-                <span className="text-xs font-bold text-agro-900 truncate">
-                  {product.harvestInformation.split(' ')[0]} Days
-                </span>
+                {product.harvestInformation && (
+                  <div className="p-3 rounded-xl bg-agro-50/60 border border-agro-100 text-center">
+                    <Sparkles className="w-4 h-4 text-gold-600 mx-auto mb-1" />
+                    <span className="text-[10px] text-gray-500 block">First Harvest</span>
+                    <span className="text-xs font-bold text-agro-900 truncate">
+                      {product.harvestInformation.split(' ')[0]} Days
+                    </span>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Action Box: Quantity, Add to Cart & Buy Now */}
@@ -293,152 +317,154 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
       </div>
 
       {/* Tabs Section: Agronomy, Planting Instructions & Storage */}
-      <div className="mt-12 bg-white rounded-3xl p-6 sm:p-10 border border-agro-100 shadow-soft">
-        <div className="flex border-b border-earth-100 gap-4 sm:gap-8 pb-4">
-          <button
-            onClick={() => setActiveTab('agronomy')}
-            className={`text-sm sm:text-base font-bold pb-2 border-b-2 transition ${
-              activeTab === 'agronomy'
-                ? 'border-agro-600 text-agro-900'
-                : 'border-transparent text-gray-400 hover:text-charcoal-800'
-            }`}
-          >
-            Growing Conditions & Agronomy
-          </button>
-          <button
-            onClick={() => setActiveTab('instructions')}
-            className={`text-sm sm:text-base font-bold pb-2 border-b-2 transition ${
-              activeTab === 'instructions'
-                ? 'border-agro-600 text-agro-900'
-                : 'border-transparent text-gray-400 hover:text-charcoal-800'
-            }`}
-          >
-            Planting & Spacing Guide
-          </button>
-          <button
-            onClick={() => setActiveTab('storage')}
-            className={`text-sm sm:text-base font-bold pb-2 border-b-2 transition ${
-              activeTab === 'storage'
-                ? 'border-agro-600 text-agro-900'
-                : 'border-transparent text-gray-400 hover:text-charcoal-800'
-            }`}
-          >
-            Storage & Viability
-          </button>
+      {showSeedSpecificDetails && (
+        <div className="mt-12 bg-white rounded-3xl p-6 sm:p-10 border border-agro-100 shadow-soft">
+          <div className="flex border-b border-earth-100 gap-4 sm:gap-8 pb-4">
+            <button
+              onClick={() => setActiveTab('agronomy')}
+              className={`text-sm sm:text-base font-bold pb-2 border-b-2 transition ${
+                activeTab === 'agronomy'
+                  ? 'border-agro-600 text-agro-900'
+                  : 'border-transparent text-gray-400 hover:text-charcoal-800'
+              }`}
+            >
+              Growing Conditions & Agronomy
+            </button>
+            <button
+              onClick={() => setActiveTab('instructions')}
+              className={`text-sm sm:text-base font-bold pb-2 border-b-2 transition ${
+                activeTab === 'instructions'
+                  ? 'border-agro-600 text-agro-900'
+                  : 'border-transparent text-gray-400 hover:text-charcoal-800'
+              }`}
+            >
+              Planting & Spacing Guide
+            </button>
+            <button
+              onClick={() => setActiveTab('storage')}
+              className={`text-sm sm:text-base font-bold pb-2 border-b-2 transition ${
+                activeTab === 'storage'
+                  ? 'border-agro-600 text-agro-900'
+                  : 'border-transparent text-gray-400 hover:text-charcoal-800'
+              }`}
+            >
+              Storage & Viability
+            </button>
+          </div>
+
+          <div className="pt-6">
+            {activeTab === 'agronomy' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
+                  <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
+                    <Sun className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-charcoal-900">Sunlight Requirement</h4>
+                    <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
+                      {product.growingConditions.sunlight}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
+                  <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
+                    <Layers className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-charcoal-900">Recommended Soil</h4>
+                    <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
+                      {product.growingConditions.soil}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
+                  <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
+                    <Thermometer className="w-5 h-5 text-rose-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-charcoal-900">Ideal Climate & Temp</h4>
+                    <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
+                      {product.growingConditions.temperature}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
+                  <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
+                    <Droplets className="w-5 h-5 text-sky-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-charcoal-900">Watering Schedule</h4>
+                    <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
+                      {product.growingConditions.watering}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'instructions' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-2xl bg-agro-50/50 border border-agro-100">
+                    <span className="text-xs text-gray-500 block">Plant Spacing</span>
+                    <span className="text-sm font-bold text-agro-900 mt-1 block">
+                      {product.plantSpacing}
+                    </span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-agro-50/50 border border-agro-100">
+                    <span className="text-xs text-gray-500 block">Sowing Depth</span>
+                    <span className="text-sm font-bold text-agro-900 mt-1 block">
+                      {product.sowingDepth}
+                    </span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-agro-50/50 border border-agro-100">
+                    <span className="text-xs text-gray-500 block">Harvest Expectation</span>
+                    <span className="text-sm font-bold text-agro-900 mt-1 block">
+                      {product.harvestInformation}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-earth-50 border border-earth-200 text-xs sm:text-sm text-charcoal-800 space-y-2">
+                  <h4 className="font-bold text-charcoal-900">Step-by-Step Planting Tips:</h4>
+                  <ol className="list-decimal pl-5 space-y-1.5 leading-relaxed">
+                    <li>
+                      Prepare seedling nursery trays or nursery raised beds with fine compost and coir dust mix (1:1).
+                    </li>
+                    <li>
+                      Sow seeds at {product.sowingDepth} depth and cover lightly with sifted topsoil.
+                    </li>
+                    <li>
+                      Moisten with a fine mist sprayer twice daily. Germination typically begins within 5-8 days.
+                    </li>
+                    <li>
+                      Transplant healthy seedlings with 3-4 true leaves into well-tilled field beds spacing {product.plantSpacing} apart.
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'storage' && (
+              <div className="p-5 rounded-2xl bg-earth-50 border border-earth-200 text-xs sm:text-sm text-charcoal-800 space-y-3">
+                <h4 className="font-bold text-charcoal-900">Seed Storage & Shelf Life</h4>
+                <p>
+                  Our seeds are packaged in multi-layered, hermetically sealed aluminum foil pouches
+                  with desiccant packets to prevent ambient tropical moisture absorption.
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Store unopened seed packs in a cool, dry location below 20°C or refrigerator vegetable crisper.</li>
+                  <li>Once opened, reseal tightly and sow within the current planting season for optimal germination.</li>
+                  <li>Guaranteed minimum {product.germinationRate}% germination viability for 12 months from packing date.</li>
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
-
-        <div className="pt-6">
-          {activeTab === 'agronomy' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
-                <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
-                  <Sun className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-charcoal-900">Sunlight Requirement</h4>
-                  <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
-                    {product.growingConditions.sunlight}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
-                <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
-                  <Layers className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-charcoal-900">Recommended Soil</h4>
-                  <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
-                    {product.growingConditions.soil}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
-                <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
-                  <Thermometer className="w-5 h-5 text-rose-500" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-charcoal-900">Ideal Climate & Temp</h4>
-                  <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
-                    {product.growingConditions.temperature}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-earth-50/60 border border-earth-200/50">
-                <div className="w-10 h-10 rounded-xl bg-agro-100 flex items-center justify-center text-agro-700 flex-shrink-0">
-                  <Droplets className="w-5 h-5 text-sky-500" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-charcoal-900">Watering Schedule</h4>
-                  <p className="text-xs sm:text-sm text-charcoal-800/80 mt-1">
-                    {product.growingConditions.watering}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'instructions' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-agro-50/50 border border-agro-100">
-                  <span className="text-xs text-gray-500 block">Plant Spacing</span>
-                  <span className="text-sm font-bold text-agro-900 mt-1 block">
-                    {product.plantSpacing}
-                  </span>
-                </div>
-                <div className="p-4 rounded-2xl bg-agro-50/50 border border-agro-100">
-                  <span className="text-xs text-gray-500 block">Sowing Depth</span>
-                  <span className="text-sm font-bold text-agro-900 mt-1 block">
-                    {product.sowingDepth}
-                  </span>
-                </div>
-                <div className="p-4 rounded-2xl bg-agro-50/50 border border-agro-100">
-                  <span className="text-xs text-gray-500 block">Harvest Expectation</span>
-                  <span className="text-sm font-bold text-agro-900 mt-1 block">
-                    {product.harvestInformation}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-earth-50 border border-earth-200 text-xs sm:text-sm text-charcoal-800 space-y-2">
-                <h4 className="font-bold text-charcoal-900">Step-by-Step Planting Tips:</h4>
-                <ol className="list-decimal pl-5 space-y-1.5 leading-relaxed">
-                  <li>
-                    Prepare seedling nursery trays or nursery raised beds with fine compost and coir dust mix (1:1).
-                  </li>
-                  <li>
-                    Sow seeds at {product.sowingDepth} depth and cover lightly with sifted topsoil.
-                  </li>
-                  <li>
-                    Moisten with a fine mist sprayer twice daily. Germination typically begins within 5-8 days.
-                  </li>
-                  <li>
-                    Transplant healthy seedlings with 3-4 true leaves into well-tilled field beds spacing {product.plantSpacing} apart.
-                  </li>
-                </ol>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'storage' && (
-            <div className="p-5 rounded-2xl bg-earth-50 border border-earth-200 text-xs sm:text-sm text-charcoal-800 space-y-3">
-              <h4 className="font-bold text-charcoal-900">Seed Storage & Shelf Life</h4>
-              <p>
-                Our seeds are packaged in multi-layered, hermetically sealed aluminum foil pouches
-                with desiccant packets to prevent ambient tropical moisture absorption.
-              </p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Store unopened seed packs in a cool, dry location below 20°C or refrigerator vegetable crisper.</li>
-                <li>Once opened, reseal tightly and sow within the current planting season for optimal germination.</li>
-                <li>Guaranteed minimum {product.germinationRate}% germination viability for 12 months from packing date.</li>
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Why Choose Our Seeds Banner */}
       <div className="mt-12 bg-gradient-to-r from-agro-900 via-agro-800 to-agro-950 text-white rounded-3xl p-8 sm:p-10 shadow-soft-xl">

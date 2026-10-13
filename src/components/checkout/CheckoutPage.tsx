@@ -19,8 +19,16 @@ import {
   Info,
 } from 'lucide-react';
 
+const formatPackSize = (quantity: number, unit: string) => {
+  const normalizedUnit = unit.trim();
+  if (normalizedUnit === 'kg' || normalizedUnit === 'g') {
+    return `${quantity}${normalizedUnit}`;
+  }
+  return `${quantity} ${normalizedUnit}`;
+};
+
 export const CheckoutPage: React.FC = () => {
-  const { items, subtotal, deliveryFee, total, clearCart } = useCart();
+  const { items, subtotal, deliveryFee, totalWeightKg, total, clearCart } = useCart();
   const { navigateToCatalog, setLastCompletedOrder, setActiveView, addToast } = useStore();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -485,7 +493,7 @@ export const CheckoutPage: React.FC = () => {
                         Variety: {product.variety}
                       </span>
                       <div className="text-xs text-gray-500">
-                        Qty: {quantity} packet(s) • {product.quantity} {product.unit} each
+                        Qty: {quantity} packet(s) • {formatPackSize(product.quantity, product.unit)} each
                       </div>
                     </div>
                     <div className="text-right">
@@ -714,14 +722,13 @@ export const CheckoutPage: React.FC = () => {
             </div>
 
             <div className="flex justify-between text-charcoal-800">
-              <span>Islandwide Courier Fee</span>
-              <span className="font-semibold">
-                {deliveryFee === 0 ? (
-                  <span className="text-emerald-700 font-bold">FREE</span>
-                ) : (
-                  `LKR ${deliveryFee.toLocaleString()}`
-                )}
-              </span>
+              <span>Courier Fee</span>
+              <span className="font-semibold">LKR {deliveryFee.toLocaleString()}</span>
+            </div>
+
+            <div className="flex justify-between text-[11px] text-gray-500">
+              <span>Estimated Parcel Weight</span>
+              <span>{totalWeightKg.toFixed(1)} kg</span>
             </div>
 
             <div className="pt-3 border-t border-earth-200 flex justify-between items-baseline">

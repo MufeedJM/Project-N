@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
             {/* Accreditation Badge */}
             <div className="flex items-center gap-2 text-xs text-agro-300/90 pt-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>Certified under Department of Agriculture Standards</span>
+              <span>Certified for reliable field performance</span>
             </div>
 
             <div className="flex items-center gap-3 pt-2">

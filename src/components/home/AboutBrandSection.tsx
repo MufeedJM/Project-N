@@ -43,7 +43,7 @@ export const AboutBrandSection: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-[11px] text-charcoal-800/80 leading-snug">
-                  Every batch tested according to Department of Agriculture protocols.
+                  Every batch tested for strong germination and dependable field performance.
                 </p>
               </div>
 
@@ -75,9 +75,9 @@ export const AboutBrandSection: React.FC = () => {
             </p>
 
             <p className="mt-3 text-sm sm:text-base text-charcoal-800/85 leading-relaxed">
-              We specialize in Department of Agriculture approved varieties—such as the resilient T-245
-              tomato and legendary MI-2 hot chili—selected specifically for tropical disease tolerance
-              and peak performance during both the <strong>Maha</strong> and <strong>Yala</strong> cultivation seasons.
+              We specialize in carefully selected varieties—such as the resilient T-245 tomato and
+              legendary MI-2 hot chili—chosen specifically for tropical disease tolerance and peak
+              performance during both the <strong>Maha</strong> and <strong>Yala</strong> cultivation seasons.
             </p>
 
             {/* 3 Core Pillars */}

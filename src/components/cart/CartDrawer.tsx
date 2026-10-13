@@ -14,6 +14,14 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+const formatPackSize = (quantity: number, unit: string) => {
+  const normalizedUnit = unit.trim();
+  if (normalizedUnit === 'kg' || normalizedUnit === 'g') {
+    return `${quantity}${normalizedUnit}`;
+  }
+  return `${quantity} ${normalizedUnit}`;
+};
+
 export const CartDrawer: React.FC = () => {
   const {
     items,
@@ -21,11 +29,10 @@ export const CartDrawer: React.FC = () => {
     updateQuantity,
     subtotal,
     deliveryFee,
+    totalWeightKg,
     total,
     isCartOpen,
     setIsCartOpen,
-    freeDeliveryRemaining,
-    freeDeliveryProgress,
     itemCount,
   } = useCart();
 
@@ -73,33 +80,18 @@ export const CartDrawer: React.FC = () => {
             </button>
           </div>
 
-          {/* Free Islandwide Delivery Progress Meter */}
+          {/* Courier Fee Summary */}
           <div className="px-6 py-3 bg-earth-50 border-b border-earth-200/60">
-            {freeDeliveryRemaining > 0 ? (
-              <div className="text-xs">
-                <div className="flex items-center justify-between font-medium text-charcoal-800 mb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Truck className="w-3.5 h-3.5 text-agro-700" />
-                    <span>
-                      Add <strong className="text-agro-900">LKR {freeDeliveryRemaining.toLocaleString()}</strong> more for{' '}
-                      <span className="text-agro-700 font-bold">FREE Delivery</span>
-                    </span>
-                  </span>
-                  <span className="font-bold text-agro-800">{freeDeliveryProgress}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-earth-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-agro-600 rounded-full transition-all duration-300"
-                    style={{ width: `${freeDeliveryProgress}%` }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>You have unlocked FREE Islandwide Delivery!</span>
-              </div>
-            )}
+            <div className="flex items-center justify-between text-xs font-medium text-charcoal-800">
+              <span className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-agro-700" />
+                <span>Courier Fee</span>
+              </span>
+              <span className="font-bold text-agro-900">LKR {deliveryFee.toLocaleString()}</span>
+            </div>
+            <div className="text-[11px] text-gray-500 mt-1">
+              Estimated shipping for {totalWeightKg.toFixed(1)}kg total parcel weight.
+            </div>
           </div>
 
           {/* Cart Items List */}
@@ -160,7 +152,7 @@ export const CartDrawer: React.FC = () => {
                       </div>
 
                       <div className="text-[11px] text-gray-500 mt-0.5">
-                        {product.quantity} {product.unit} / pack
+                        {formatPackSize(product.quantity, product.unit)} / pack
                       </div>
                     </div>
 

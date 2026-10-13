@@ -7,6 +7,9 @@ export const CATEGORIES: ProductCategory[] = [
   'Leafy Vegetables',
   'Herbal Seeds',
   'Other Agricultural Seeds',
+  'Fertilizer',
+  'Tools',
+  'Other',
 ];
 
 export const SRI_LANKA_DISTRICTS = [
@@ -181,7 +184,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1563865436874-9aef32095fad?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=1200&q=80',
     ],
-    description: 'High-yielding Department of Agriculture variety bearing smooth, five-ridged dark green pods. Free from spines, exceptionally tender and resistant to Yellow Vein Mosaic Virus (YVMV).',
+    description: 'High-yielding variety bearing smooth, five-ridged dark green pods. Free from spines, exceptionally tender and resistant to Yellow Vein Mosaic Virus (YVMV).',
     germinationRate: 91,
     growingConditions: {
       soil: 'Sandy to clay loam with good drainage, pH 6.0 - 7.5',

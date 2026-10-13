@@ -22,8 +22,6 @@ export const ProductCatalog: React.FC = () => {
     setSearchQuery,
     sortBy,
     setSortBy,
-    maxPrice,
-    setMaxPrice,
   } = useStore();
 
   const [govtCertifiedOnly, setGovtCertifiedOnly] = React.useState(false);
@@ -31,7 +29,7 @@ export const ProductCatalog: React.FC = () => {
 
   // Compute filtered & sorted products
   const filteredProducts = useMemo(() => {
-    let list = seedService.search(searchQuery, selectedCategory, sortBy, maxPrice);
+    let list = seedService.search(searchQuery, selectedCategory, sortBy);
 
     if (govtCertifiedOnly) {
       list = list.filter((p) => p.departmentApproved);
@@ -42,13 +40,12 @@ export const ProductCatalog: React.FC = () => {
     }
 
     return list;
-  }, [searchQuery, selectedCategory, sortBy, maxPrice, govtCertifiedOnly, inStockOnly]);
+  }, [searchQuery, selectedCategory, sortBy, govtCertifiedOnly, inStockOnly]);
 
   const handleResetFilters = () => {
     setSelectedCategory('All');
     setSearchQuery('');
     setSortBy('popular');
-    setMaxPrice(1000);
     setGovtCertifiedOnly(false);
     setInStockOnly(false);
   };
@@ -108,9 +105,9 @@ export const ProductCatalog: React.FC = () => {
         })}
       </div>
 
-      {/* Controls Bar: Search, Price Slider, Sort, Quick Toggles */}
+      {/* Controls Bar: Search, Sort, Quick Toggles */}
       <div className="bg-white rounded-3xl p-4 sm:p-5 border border-agro-100 shadow-soft mb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-9 gap-4 items-center">
           {/* Search Input */}
           <div className="lg:col-span-4 relative">
             <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -146,23 +143,6 @@ export const ProductCatalog: React.FC = () => {
             </select>
           </div>
 
-          {/* Max Price Range Slider */}
-          <div className="lg:col-span-3 flex flex-col justify-center">
-            <div className="flex items-center justify-between text-xs text-charcoal-800 font-medium mb-1">
-              <span>Max Price:</span>
-              <span className="font-bold text-agro-900">LKR {maxPrice}</span>
-            </div>
-            <input
-              type="range"
-              min="200"
-              max="1000"
-              step="50"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full h-1.5 bg-earth-200 rounded-lg appearance-none cursor-pointer accent-agro-600"
-            />
-          </div>
-
           {/* Reset Filters Button */}
           <div className="lg:col-span-2 flex justify-end">
             <button
@@ -184,7 +164,7 @@ export const ProductCatalog: React.FC = () => {
               onChange={(e) => setGovtCertifiedOnly(e.target.checked)}
               className="rounded text-agro-700 focus:ring-agro-500 w-4 h-4 accent-agro-700 cursor-pointer"
             />
-            <span className="font-medium">Dept of Agriculture Approved Only</span>
+            <span className="font-medium">Approved Only</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer select-none">

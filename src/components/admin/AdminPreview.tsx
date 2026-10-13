@@ -27,14 +27,24 @@ import {
 export const AdminPreview: React.FC = () => {
   const { navigateToHome, addToast } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'inquiries' | 'gateway'>(
-    'inventory'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'inventory' | 'fertilizer' | 'tools' | 'orders' | 'inquiries' | 'gateway'
+  >('inventory');
 
   // Live state from services
   const [products, setProducts] = useState<Product[]>(() => seedService.getAll());
   const [orders, setOrders] = useState<Order[]>(() => orderService.getAll());
   const [inquiries, setInquiries] = useState<QuestionInquiry[]>(() => inquiryService.getAll());
+
+  const inventoryProducts = products.filter(
+    (prod) => prod.inventoryType === 'Seed' || (!prod.inventoryType && prod.category !== 'Fertilizer' && prod.category !== 'Tools')
+  );
+  const fertilizerProducts = products.filter(
+    (prod) => prod.inventoryType === 'Fertilizer' || prod.category === 'Fertilizer'
+  );
+  const toolProducts = products.filter(
+    (prod) => prod.inventoryType === 'Tool' || prod.category === 'Tools'
+  );
 
   // Editing state for inventory details
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -42,9 +52,71 @@ export const AdminPreview: React.FC = () => {
   const [tempStock, setTempStock] = useState<number>(0);
   const [tempImage, setTempImage] = useState('');
   const [tempVariety, setTempVariety] = useState('');
+  const [tempDescription, setTempDescription] = useState('');
+  const [tempCategory, setTempCategory] = useState<ProductCategory>('Vegetable Seeds');
   const [tempQuantity, setTempQuantity] = useState<number>(1);
   const [tempUnit, setTempUnit] = useState('');
+  const [tempWeight, setTempWeight] = useState<number>(0);
   const [tempGerminationRate, setTempGerminationRate] = useState<number>(0);
+  const [showAddProductForm, setShowAddProductForm] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({
+    name: '',
+    variety: '',
+    category: 'Vegetable Seeds' as ProductCategory,
+    quantity: 50,
+    unit: 'Seeds' as 'Seeds' | 'kg' | 'g' | 'unit',
+    weight: 0.5,
+    price: 500,
+    stock: 25,
+    image: '',
+    description: '',
+    germinationRate: 90,
+  });
+
+  const getUnitOptions = () => {
+    if (activeTab === 'fertilizer') {
+      return [
+        { label: 'Kilo Grams', value: 'kg' },
+        { label: 'Grams', value: 'g' },
+      ];
+    }
+
+    if (activeTab === 'tools') {
+      return [{ label: 'Unit', value: 'unit' }];
+    }
+
+    return [
+      { label: 'Seeds', value: 'Seeds' },
+      { label: 'grams', value: 'g' },
+    ];
+  };
+
+  const formatPackSize = (quantity: number, unit: string) => {
+    const normalizedUnit = unit.trim();
+    if (normalizedUnit === 'kg' || normalizedUnit === 'g') {
+      return `${quantity}${normalizedUnit}`;
+    }
+    if (normalizedUnit === 'unit' || normalizedUnit === 'Unit') {
+      return `${quantity}`;
+    }
+    return `${quantity} ${normalizedUnit}`;
+  };
+
+  const resetNewProductForm = () => {
+    setNewProductForm({
+      name: '',
+      variety: '',
+      category: activeTab === 'fertilizer' ? 'Fertilizer' : activeTab === 'tools' ? 'Tools' : 'Vegetable Seeds',
+      quantity: activeTab === 'tools' ? 1 : 50,
+      unit: activeTab === 'fertilizer' ? 'kg' : activeTab === 'tools' ? 'unit' : 'Seeds',
+      weight: 0.5,
+      price: 500,
+      stock: 25,
+      image: '',
+      description: '',
+      germinationRate: 90,
+    });
+  };
 
   const startEditProduct = (prod: Product) => {
     setEditingProductId(prod.id);
@@ -52,8 +124,11 @@ export const AdminPreview: React.FC = () => {
     setTempStock(prod.stock);
     setTempImage(prod.image);
     setTempVariety(prod.variety);
+    setTempDescription(prod.description);
+    setTempCategory(prod.category);
     setTempQuantity(prod.quantity);
     setTempUnit(prod.unit);
+    setTempWeight(prod.weight ?? 0);
     setTempGerminationRate(prod.germinationRate);
   };
 
@@ -61,23 +136,38 @@ export const AdminPreview: React.FC = () => {
     const image = tempImage.trim();
     const variety = tempVariety.trim();
     const unit = tempUnit.trim();
+    const description = tempDescription.trim();
+    const isNonSeedInventory =
+      product.inventoryType === 'Fertilizer' ||
+      product.inventoryType === 'Tool' ||
+      product.category === 'Fertilizer' ||
+      product.category === 'Tools';
+    const hasValidGermination =
+      isNonSeedInventory ||
+      (Number.isInteger(tempGerminationRate) &&
+        tempGerminationRate >= 0 &&
+        tempGerminationRate <= 100);
+
     if (
       !image ||
       !variety ||
       !unit ||
+      !description ||
+      Number.isNaN(tempWeight) ||
+      tempWeight < 0 ||
       !Number.isInteger(tempPrice) ||
       tempPrice < 0 ||
       !Number.isInteger(tempStock) ||
       tempStock < 0 ||
       !Number.isInteger(tempQuantity) ||
       tempQuantity < 1 ||
-      !Number.isInteger(tempGerminationRate) ||
-      tempGerminationRate < 0 ||
-      tempGerminationRate > 100
+      !hasValidGermination
     ) {
       addToast(
         'Invalid Product Details',
-        'Enter an image URL, variety, and unit. Price and stock must be non-negative whole numbers, pack quantity must be at least 1, and germination must be between 0 and 100.',
+        isNonSeedInventory
+          ? 'Enter an image URL, variety, unit, description, and valid weight. Price and stock must be non-negative whole numbers, and pack quantity must be at least 1.'
+          : 'Enter an image URL, variety, unit, description, and valid weight. Price and stock must be non-negative whole numbers, pack quantity must be at least 1, and germination must be between 0 and 100.',
         'error'
       );
       return;
@@ -92,17 +182,126 @@ export const AdminPreview: React.FC = () => {
           (galleryImage) => galleryImage !== product.image && galleryImage !== image
         ),
       ],
+      category: tempCategory,
       variety,
+      description,
       quantity: tempQuantity,
       unit,
+      weight: tempWeight,
       price: tempPrice,
       stock: tempStock,
-      germinationRate: tempGerminationRate,
+      germinationRate: isNonSeedInventory ? 0 : tempGerminationRate,
     };
     seedService.updateProduct(updated);
     setProducts(seedService.getAll());
     setEditingProductId(null);
     addToast('Updated', `${product.name} inventory details updated.`, 'success');
+  };
+
+  const handleAddProduct = () => {
+    const name = newProductForm.name.trim();
+    const variety = newProductForm.variety.trim();
+    const unit = newProductForm.unit.trim();
+    const image = newProductForm.image.trim();
+    const description = newProductForm.description.trim();
+
+    const inventoryType =
+      activeTab === 'fertilizer' ? 'Fertilizer' : activeTab === 'tools' ? 'Tool' : 'Seed';
+
+    const isSeedInventory = inventoryType === 'Seed';
+    const hasValidGermination =
+      !isSeedInventory ||
+      (!Number.isInteger(newProductForm.germinationRate) ||
+        newProductForm.germinationRate < 0 ||
+        newProductForm.germinationRate > 100
+        ? false
+        : true);
+
+    if (
+      !name ||
+      !variety ||
+      !unit ||
+      !image ||
+      !description ||
+      Number.isNaN(newProductForm.weight) ||
+      newProductForm.weight < 0 ||
+      !Number.isInteger(newProductForm.price) ||
+      newProductForm.price <= 0 ||
+      !Number.isInteger(newProductForm.stock) ||
+      newProductForm.stock < 0 ||
+      !Number.isInteger(newProductForm.quantity) ||
+      newProductForm.quantity < 1 ||
+      !hasValidGermination
+    ) {
+      addToast(
+        'Incomplete Product Details',
+        isSeedInventory
+          ? 'Add a product name, variety, unit, image URL, description, weight, price, stock, and valid germination rate before saving.'
+          : 'Add a product name, variety, unit, image URL, description, weight, price, and stock before saving.',
+        'error'
+      );
+      return;
+    }
+
+    const product: Product = {
+      id: `prod-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      name,
+      variety,
+      cropType:
+        inventoryType === 'Seed'
+          ? 'General Seed Variety'
+          : inventoryType === 'Fertilizer'
+            ? 'Plant Nutrition Product'
+            : 'Agricultural Tool',
+      category:
+        inventoryType === 'Fertilizer'
+          ? 'Fertilizer'
+          : inventoryType === 'Tool'
+            ? 'Tools'
+            : newProductForm.category,
+      price: newProductForm.price,
+      currency: 'LKR',
+      quantity: newProductForm.quantity,
+      unit,
+      weight: newProductForm.weight,
+      image,
+      gallery: [image],
+      description,
+      germinationRate: inventoryType === 'Seed' ? newProductForm.germinationRate : 0,
+      growingConditions: {
+        soil: 'Well-drained, fertile loam with good organic matter',
+        sunlight: 'Full sun with adequate daily exposure',
+        temperature: 'Warm tropical conditions suitable for cultivation',
+        watering: 'Regular watering with good soil moisture management',
+      },
+      plantingSeason: 'Yala & Maha',
+      harvestInformation: inventoryType === 'Seed' ? 'As per recommended crop cycle' : 'Usage guidance applies',
+      plantSpacing: 'Follow crop-specific spacing guidance',
+      sowingDepth: 'Follow package or agronomic guidance',
+      stock: newProductForm.stock,
+      featured: false,
+      bestSeller: false,
+      isNew: true,
+      departmentApproved: false,
+      inventoryType,
+    };
+
+    seedService.addProduct(product);
+    setProducts(seedService.getAll());
+    setShowAddProductForm(false);
+    resetNewProductForm();
+    addToast('Product Added', `${name} was added to the inventory.`, 'success');
+  };
+
+  const handleDeleteProduct = (product: Product) => {
+    const confirmed = window.confirm(`Delete ${product.name} (${product.variety}) from the catalog?`);
+    if (!confirmed) {
+      return;
+    }
+
+    seedService.deleteProduct(product.id);
+    setProducts(seedService.getAll());
+    addToast('Product Deleted', `${product.name} removed from the catalog.`, 'info');
   };
 
   const handleStatusChange = (orderId: string, status: Order['orderStatus']) => {
@@ -164,7 +363,31 @@ export const AdminPreview: React.FC = () => {
             }`}
           >
             <Package className="w-4 h-4" />
-            <span>Seed Inventory ({products.length})</span>
+            <span>Seed Inventory ({inventoryProducts.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('fertilizer')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition ${
+              activeTab === 'fertilizer'
+                ? 'border-agro-400 text-white'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            <span>Fertilizer Inventory ({fertilizerProducts.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('tools')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition ${
+              activeTab === 'tools'
+                ? 'border-agro-400 text-white'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Tools ({toolProducts.length})</span>
           </button>
 
           <button
@@ -208,12 +431,16 @@ export const AdminPreview: React.FC = () => {
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         {/* TAB 1: INVENTORY MANAGEMENT */}
-        {activeTab === 'inventory' && (
+        {(activeTab === 'inventory' || activeTab === 'fertilizer' || activeTab === 'tools') && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-charcoal-900 font-display">
-                  Live Seed Products &amp; Stock
+                  {activeTab === 'inventory'
+                    ? 'Live Seed Products & Stock'
+                    : activeTab === 'fertilizer'
+                      ? 'Fertilizer Inventory'
+                      : 'Tools Inventory'}
                 </h2>
                 <p className="text-xs text-charcoal-800/70 mt-0.5">
                   Products are stored in database-ready local storage. Changes immediately reflect in
@@ -222,6 +449,19 @@ export const AdminPreview: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowAddProductForm(!showAddProductForm);
+                    if (!showAddProductForm) {
+                      resetNewProductForm();
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-agro-700 text-white text-xs font-semibold hover:bg-agro-600 transition"
+                  title="Add a new product to the catalog"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{showAddProductForm ? 'Close Form' : 'Add Product'}</span>
+                </button>
                 <button
                   onClick={handleResetCatalog}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-earth-200 text-charcoal-800 text-xs font-semibold hover:bg-earth-100 transition"
@@ -232,6 +472,228 @@ export const AdminPreview: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {showAddProductForm && (
+              <div className="bg-white rounded-3xl border border-agro-100 shadow-soft p-5">
+                <div className="flex items-center justify-between gap-3 pb-4 border-b border-earth-100">
+                  <div>
+                    <h3 className="text-lg font-bold text-charcoal-900 font-display">
+                      Create New Product
+                    </h3>
+                    <p className="text-xs text-charcoal-700 mt-0.5">
+                      Add a new seed listing to the storefront inventory.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <label className="text-xs font-semibold text-charcoal-800">
+                    Product Name
+                    <input
+                      type="text"
+                      value={newProductForm.name}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({ ...current, name: e.target.value }))
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                      placeholder="e.g. Tomato Seeds"
+                    />
+                  </label>
+
+                  <label className="text-xs font-semibold text-charcoal-800">
+                    Variety
+                    <input
+                      type="text"
+                      value={newProductForm.variety}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({ ...current, variety: e.target.value }))
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                      placeholder="e.g. T-245 (Target F1)"
+                    />
+                  </label>
+
+                  <label className="text-xs font-semibold text-charcoal-800">
+                    Category
+                    <select
+                      value={newProductForm.category}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({
+                          ...current,
+                          category: e.target.value as ProductCategory,
+                        }))
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                    >
+                      {CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="text-xs font-semibold text-charcoal-800">
+                    Price (LKR)
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={newProductForm.price}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({
+                          ...current,
+                          price: Number(e.target.value),
+                        }))
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                    />
+                  </label>
+
+                  <label className="text-xs font-semibold text-charcoal-800">
+                    Stock (Packets)
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={newProductForm.stock}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({
+                          ...current,
+                          stock: Number(e.target.value),
+                        }))
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                    />
+                  </label>
+
+                  <label className="text-xs font-semibold text-charcoal-800">
+                    Weight (kg)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={newProductForm.weight}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({
+                          ...current,
+                          weight: Number(e.target.value),
+                        }))
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                    />
+                  </label>
+
+                  {activeTab !== 'tools' && (
+                    <>
+                      <label className="text-xs font-semibold text-charcoal-800">
+                        Pack Quantity
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={newProductForm.quantity}
+                          onChange={(e) =>
+                            setNewProductForm((current) => ({
+                              ...current,
+                              quantity: Number(e.target.value),
+                            }))
+                          }
+                          className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                        />
+                      </label>
+
+                      <label className="text-xs font-semibold text-charcoal-800">
+                        Unit
+                        <select
+                          value={newProductForm.unit}
+                          onChange={(e) =>
+                            setNewProductForm((current) => ({
+                              ...current,
+                              unit: e.target.value as 'Seeds' | 'kg' | 'g' | 'unit',
+                            }))
+                          }
+                          className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                        >
+                          {getUnitOptions().map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </>
+                  )}
+
+                  {activeTab === 'inventory' && (
+                    <label className="text-xs font-semibold text-charcoal-800">
+                      Germination Rate (%)
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={newProductForm.germinationRate}
+                        onChange={(e) =>
+                          setNewProductForm((current) => ({
+                            ...current,
+                            germinationRate: Number(e.target.value),
+                          }))
+                        }
+                        className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                      />
+                    </label>
+                  )}
+
+                  <label className="md:col-span-2 xl:col-span-3 text-xs font-semibold text-charcoal-800">
+                    Product Image URL
+                    <input
+                      type="url"
+                      value={newProductForm.image}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({ ...current, image: e.target.value }))
+                      }
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </label>
+
+                  <label className="md:col-span-2 xl:col-span-3 text-xs font-semibold text-charcoal-800">
+                    Description
+                    <textarea
+                      value={newProductForm.description}
+                      onChange={(e) =>
+                        setNewProductForm((current) => ({
+                          ...current,
+                          description: e.target.value,
+                        }))
+                      }
+                      rows={4}
+                      className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
+                      placeholder="Briefly describe the seed variety, performance, and growing value."
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-5 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setShowAddProductForm(false);
+                      resetNewProductForm();
+                    }}
+                    className="px-3 py-2 rounded-xl bg-gray-200 text-charcoal-800 text-xs font-semibold hover:bg-gray-300 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddProduct}
+                    className="px-3 py-2 rounded-xl bg-agro-700 text-white text-xs font-semibold hover:bg-agro-600 transition"
+                  >
+                    Save Product
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Inventory Table */}
             <div className="bg-white rounded-3xl border border-agro-100 shadow-soft overflow-hidden">
@@ -244,12 +706,17 @@ export const AdminPreview: React.FC = () => {
                       <th className="py-3.5 px-4">Pack Size</th>
                       <th className="py-3.5 px-4">Price (LKR)</th>
                       <th className="py-3.5 px-4">Stock (Packets)</th>
-                      <th className="py-3.5 px-4">Germination</th>
+                      {activeTab === 'inventory' && <th className="py-3.5 px-4">Germination</th>}
                       <th className="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-earth-100">
-                    {products.map((prod) => {
+                    {(activeTab === 'inventory'
+                      ? inventoryProducts
+                      : activeTab === 'fertilizer'
+                        ? fertilizerProducts
+                        : toolProducts
+                    ).map((prod) => {
                       const isEditing = editingProductId === prod.id;
                       return (
                         <tr key={prod.id} className="hover:bg-agro-50/30 transition">
@@ -276,47 +743,85 @@ export const AdminPreview: React.FC = () => {
                                   )}
                                 </span>
                                 {isEditing && (
-                                  <input
-                                    type="url"
-                                    value={tempImage}
-                                    onChange={(e) => setTempImage(e.target.value)}
-                                    aria-label={`${prod.name} photo URL`}
-                                    placeholder="Photo URL"
-                                    className="mt-1 w-48 px-2 py-1 border rounded bg-white"
-                                  />
+                                  <>
+                                    <input
+                                      type="url"
+                                      value={tempImage}
+                                      onChange={(e) => setTempImage(e.target.value)}
+                                      aria-label={`${prod.name} photo URL`}
+                                      placeholder="Photo URL"
+                                      className="mt-1 w-48 px-2 py-1 border rounded bg-white"
+                                    />
+                                    <textarea
+                                      value={tempDescription}
+                                      onChange={(e) => setTempDescription(e.target.value)}
+                                      aria-label={`${prod.name} description`}
+                                      placeholder="Description"
+                                      rows={2}
+                                      className="mt-1 w-48 px-2 py-1 border rounded bg-white"
+                                    />
+                                  </>
                                 )}
                               </div>
                             </div>
                           </td>
 
                           <td className="py-3 px-4">
-                            <span className="px-2 py-0.5 rounded-md bg-earth-100 text-charcoal-800 text-[10px] font-semibold">
-                              {prod.category}
-                            </span>
+                            {isEditing ? (
+                              <select
+                                value={tempCategory}
+                                onChange={(e) => setTempCategory(e.target.value as ProductCategory)}
+                                className="w-32 px-2 py-1 border rounded bg-white"
+                              >
+                                {CATEGORIES.map((category) => (
+                                  <option key={category} value={category}>
+                                    {category}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-earth-100 text-charcoal-800 text-[10px] font-semibold">
+                                {prod.category}
+                              </span>
+                            )}
                           </td>
 
                           <td className="py-3 px-4 font-medium">
                             {isEditing ? (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  step="1"
-                                  value={tempQuantity}
-                                  onChange={(e) => setTempQuantity(Number(e.target.value))}
-                                  aria-label={`${prod.name} pack quantity`}
-                                  className="w-16 px-2 py-1 border rounded bg-white"
-                                />
-                                <input
-                                  type="text"
-                                  value={tempUnit}
-                                  onChange={(e) => setTempUnit(e.target.value)}
-                                  aria-label={`${prod.name} pack unit`}
-                                  className="w-16 px-2 py-1 border rounded bg-white"
-                                />
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    value={tempQuantity}
+                                    onChange={(e) => setTempQuantity(Number(e.target.value))}
+                                    aria-label={`${prod.name} pack quantity`}
+                                    className="w-16 px-2 py-1 border rounded bg-white"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={tempUnit}
+                                    onChange={(e) => setTempUnit(e.target.value)}
+                                    aria-label={`${prod.name} pack unit`}
+                                    className="w-16 px-2 py-1 border rounded bg-white"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-500">Weight</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={tempWeight}
+                                    onChange={(e) => setTempWeight(Number(e.target.value))}
+                                    aria-label={`${prod.name} weight`}
+                                    className="w-16 px-2 py-1 border rounded bg-white"
+                                  />
+                                </div>
                               </div>
                             ) : (
-                              `${prod.quantity} ${prod.unit}`
+                              formatPackSize(prod.quantity, prod.unit)
                             )}
                           </td>
 
@@ -358,22 +863,24 @@ export const AdminPreview: React.FC = () => {
                             )}
                           </td>
 
-                          <td className="py-3 px-4 font-medium text-emerald-700">
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="1"
-                                value={tempGerminationRate}
-                                onChange={(e) => setTempGerminationRate(Number(e.target.value))}
-                                aria-label={`${prod.name} germination rate`}
-                                className="w-20 px-2 py-1 border rounded bg-white text-charcoal-900"
-                              />
-                            ) : (
-                              `${prod.germinationRate}% Viable`
-                            )}
-                          </td>
+                          {activeTab === 'inventory' && (
+                            <td className="py-3 px-4 font-medium text-emerald-700">
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={tempGerminationRate}
+                                  onChange={(e) => setTempGerminationRate(Number(e.target.value))}
+                                  aria-label={`${prod.name} germination rate`}
+                                  className="w-20 px-2 py-1 border rounded bg-white text-charcoal-900"
+                                />
+                              ) : (
+                                `${prod.germinationRate}% Viable`
+                              )}
+                            </td>
+                          )}
 
                           <td className="py-3 px-4 text-right">
                             {isEditing ? (
@@ -392,13 +899,23 @@ export const AdminPreview: React.FC = () => {
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() => startEditProduct(prod)}
-                                className="inline-flex items-center gap-1 text-agro-700 hover:text-agro-900 font-semibold p-1"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                                <span>Edit</span>
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => startEditProduct(prod)}
+                                  className="inline-flex items-center gap-1 text-agro-700 hover:text-agro-900 font-semibold p-1"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(prod)}
+                                  className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 font-semibold p-1"
+                                  title={`Delete ${prod.name}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>

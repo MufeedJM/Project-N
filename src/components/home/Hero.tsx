@@ -29,8 +29,6 @@ export const Hero: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-agro-200 text-xs sm:text-sm font-medium mb-6 animate-in fade-in duration-500">
             <span className="flex h-2 w-2 rounded-full bg-gold-400 animate-ping" />
             <span className="font-semibold text-white">Certified Cultivars for Sri Lanka</span>
-            <span className="text-white/40">•</span>
-            <span className="text-gold-300">Department of Agriculture Approved</span>
           </div>
 
           {/* Large Headline */}

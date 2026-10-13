@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '../types';
-import { BRAND_CONFIG } from '../data/products';
 
 interface CartContextType {
   items: CartItem[];
@@ -11,6 +10,7 @@ interface CartContextType {
   itemCount: number;
   subtotal: number;
   deliveryFee: number;
+  totalWeightKg: number;
   total: number;
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
@@ -84,18 +84,51 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
-  const deliveryFee =
-    subtotal === 0 || subtotal >= BRAND_CONFIG.freeDeliveryThreshold
-      ? 0
-      : BRAND_CONFIG.standardDeliveryFee;
+  const getProductWeightKg = (product: Product) => {
+    const explicitWeight = Number(product.weight);
+    if (Number.isFinite(explicitWeight) && explicitWeight >= 0) {
+      return explicitWeight;
+    }
+
+    const isSeedProduct =
+      product.inventoryType === 'Seed' ||
+      (!product.inventoryType && product.category !== 'Fertilizer' && product.category !== 'Tools');
+
+    return isSeedProduct ? 0.5 : 1;
+  };
+
+  const totalWeightKg = items.reduce(
+    (sum, item) => sum + getProductWeightKg(item.product) * item.quantity,
+    0
+  );
+
+  const deliveryFee = (() => {
+    if (subtotal === 0) return 0;
+
+    const isSeedOnlyOrder = items.every(
+      (item) =>
+        item.product.inventoryType === 'Seed' ||
+        (!item.product.inventoryType && item.product.category !== 'Fertilizer' && item.product.category !== 'Tools')
+    );
+
+    if (isSeedOnlyOrder) {
+      if (subtotal > 3000) return 450;
+      if (subtotal > 2500) return 400;
+      if (subtotal > 1000) return 300;
+      return 250;
+    }
+
+    if (totalWeightKg <= 1) {
+      return 425;
+    }
+
+    return 425 + (Math.ceil(totalWeightKg) - 1) * 100;
+  })();
 
   const total = subtotal + deliveryFee;
 
-  const freeDeliveryRemaining = Math.max(0, BRAND_CONFIG.freeDeliveryThreshold - subtotal);
-  const freeDeliveryProgress = Math.min(
-    100,
-    Math.round((subtotal / BRAND_CONFIG.freeDeliveryThreshold) * 100)
-  );
+  const freeDeliveryRemaining = 0;
+  const freeDeliveryProgress = 0;
 
   return (
     <CartContext.Provider
@@ -108,6 +141,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         itemCount,
         subtotal,
         deliveryFee,
+        totalWeightKg,
         total,
         isCartOpen,
         setIsCartOpen,

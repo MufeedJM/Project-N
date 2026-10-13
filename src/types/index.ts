@@ -1,10 +1,13 @@
-export type ProductCategory = 
+export type ProductCategory =
   | 'Vegetable Seeds'
   | 'Fruit Seeds'
   | 'Flower Seeds'
   | 'Leafy Vegetables'
   | 'Herbal Seeds'
-  | 'Other Agricultural Seeds';
+  | 'Other Agricultural Seeds'
+  | 'Fertilizer'
+  | 'Tools'
+  | 'Other';
 
 export interface GrowingConditions {
   soil: string;
@@ -23,6 +26,7 @@ export interface Product {
   currency: 'LKR';
   quantity: number; // e.g. 100
   unit: string; // e.g. "Seeds" or "g"
+  weight?: number; // shipping weight in kg for courier calculation; hidden from storefront display
   image: string;
   gallery: string[];
   description: string;
@@ -37,6 +41,7 @@ export interface Product {
   bestSeller?: boolean;
   isNew?: boolean;
   departmentApproved?: boolean; // Sri Lanka Dept. of Agriculture approved variety
+  inventoryType?: 'Seed' | 'Fertilizer' | 'Tool';
 }
 
 export interface CartItem {
