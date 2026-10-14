@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '../types';
+import { FERTILIZER_CATEGORIES } from '../data/products';
 
 interface CartContextType {
   items: CartItem[];
@@ -92,7 +93,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const isSeedProduct =
       product.inventoryType === 'Seed' ||
-      (!product.inventoryType && product.category !== 'Fertilizer' && product.category !== 'Tools');
+      (!product.inventoryType &&
+        product.category !== 'Fertilizer' &&
+        !FERTILIZER_CATEGORIES.includes(product.category) &&
+        product.category !== 'Tools');
 
     return isSeedProduct ? 0.5 : 1;
   };
@@ -108,7 +112,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isSeedOnlyOrder = items.every(
       (item) =>
         item.product.inventoryType === 'Seed' ||
-        (!item.product.inventoryType && item.product.category !== 'Fertilizer' && item.product.category !== 'Tools')
+        (!item.product.inventoryType &&
+          item.product.category !== 'Fertilizer' &&
+          !FERTILIZER_CATEGORIES.includes(item.product.category) &&
+          item.product.category !== 'Tools')
     );
 
     if (isSeedOnlyOrder) {

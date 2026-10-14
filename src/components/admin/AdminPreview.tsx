@@ -4,7 +4,7 @@ import { seedService } from '../../services/seedService';
 import { orderService } from '../../services/orderService';
 import { inquiryService } from '../../services/inquiryService';
 import { Product, Order, QuestionInquiry, ProductCategory } from '../../types';
-import { CATEGORIES, BRAND_CONFIG } from '../../data/products';
+import { CATEGORIES, FERTILIZER_CATEGORIES, BRAND_CONFIG } from '../../data/products';
 import { PAYHERE_CONFIG, BANK_DETAILS } from '../../services/paymentGateway';
 import {
   ArrowLeft,
@@ -92,10 +92,18 @@ export const AdminPreview: React.FC = () => {
   };
 
   const inventoryProducts = products.filter(
-    (prod) => prod.inventoryType === 'Seed' || (!prod.inventoryType && prod.category !== 'Fertilizer' && prod.category !== 'Tools')
+    (prod) =>
+      prod.inventoryType === 'Seed' ||
+      (!prod.inventoryType &&
+        prod.category !== 'Fertilizer' &&
+        !FERTILIZER_CATEGORIES.includes(prod.category) &&
+        prod.category !== 'Tools')
   );
   const fertilizerProducts = products.filter(
-    (prod) => prod.inventoryType === 'Fertilizer' || prod.category === 'Fertilizer'
+    (prod) =>
+      prod.inventoryType === 'Fertilizer' ||
+      prod.category === 'Fertilizer' ||
+      FERTILIZER_CATEGORIES.includes(prod.category)
   );
   const toolProducts = products.filter(
     (prod) => prod.inventoryType === 'Tool' || prod.category === 'Tools'
@@ -128,16 +136,28 @@ export const AdminPreview: React.FC = () => {
     germinationRate: 90,
   });
 
-  const getUnitOptions = () => {
-    if (activeTab === 'fertilizer') {
-      return [
-        { label: 'Kilo Grams', value: 'kg' },
-        { label: 'Grams', value: 'g' },
-      ];
-    }
+  const addProductCategories: ProductCategory[] =
+    activeTab === 'fertilizer'
+      ? FERTILIZER_CATEGORIES
+      : activeTab === 'tools'
+        ? ['Tools']
+        : CATEGORIES.filter(
+            (category) =>
+              category !== 'Fertilizer' &&
+              !FERTILIZER_CATEGORIES.includes(category) &&
+              category !== 'Tools'
+          );
 
+  const getUnitOptions = () => {
     if (activeTab === 'tools') {
       return [{ label: 'Unit', value: 'unit' }];
+    }
+
+    if (activeTab === 'fertilizer') {
+      return [
+        { label: 'Kilograms (kg)', value: 'kg' },
+        { label: 'Grams (g)', value: 'g' },
+      ];
     }
 
     return [
@@ -161,7 +181,12 @@ export const AdminPreview: React.FC = () => {
     setNewProductForm({
       name: '',
       variety: '',
-      category: activeTab === 'fertilizer' ? 'Fertilizer' : activeTab === 'tools' ? 'Tools' : 'Vegetable Seeds',
+      category:
+        activeTab === 'fertilizer'
+          ? FERTILIZER_CATEGORIES[0]
+          : activeTab === 'tools'
+            ? 'Tools'
+            : 'Vegetable Seeds',
       quantity: activeTab === 'tools' ? 1 : 50,
       unit: activeTab === 'fertilizer' ? 'kg' : activeTab === 'tools' ? 'unit' : 'Seeds',
       weight: 0.5,
@@ -319,7 +344,7 @@ export const AdminPreview: React.FC = () => {
             : 'Agricultural Tool',
       category:
         inventoryType === 'Fertilizer'
-          ? 'Fertilizer'
+          ? newProductForm.category
           : inventoryType === 'Tool'
             ? 'Tools'
             : newProductForm.category,
@@ -618,8 +643,7 @@ export const AdminPreview: React.FC = () => {
                       : 'Tools Inventory'}
                 </h2>
                 <p className="text-xs text-charcoal-800/70 mt-0.5">
-                  Products are stored in database-ready local storage. Changes immediately reflect in
-                  the online store.
+                  Products and uploaded photos are shared with the storefront through the server database.
                 </p>
               </div>
 
@@ -656,7 +680,7 @@ export const AdminPreview: React.FC = () => {
                       Create New Product
                     </h3>
                     <p className="text-xs text-charcoal-700 mt-0.5">
-                      Add a new seed listing to the storefront inventory.
+                      Add a new {activeTab === 'fertilizer' ? 'fertilizer' : activeTab === 'tools' ? 'tool' : 'seed'} listing to the storefront inventory.
                     </p>
                   </div>
                 </div>
@@ -700,7 +724,7 @@ export const AdminPreview: React.FC = () => {
                       }
                       className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
                     >
-                      {CATEGORIES.map((category) => (
+                      {addProductCategories.map((category) => (
                         <option key={category} value={category}>
                           {category}
                         </option>
@@ -762,7 +786,7 @@ export const AdminPreview: React.FC = () => {
                   {activeTab !== 'tools' && (
                     <>
                       <label className="text-xs font-semibold text-charcoal-800">
-                        Pack Quantity
+                        {activeTab === 'fertilizer' ? 'Pack Size' : 'Pack Quantity'}
                         <input
                           type="number"
                           min="1"
@@ -776,6 +800,11 @@ export const AdminPreview: React.FC = () => {
                           }
                           className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
                         />
+                        {activeTab === 'fertilizer' && (
+                          <span className="mt-1 block text-[11px] font-normal text-charcoal-700/70">
+                            Enter the pack amount, such as 1, 200, or 25, then choose kg or g.
+                          </span>
+                        )}
                       </label>
 
                       <label className="text-xs font-semibold text-charcoal-800">

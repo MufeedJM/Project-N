@@ -1,20 +1,24 @@
 import type { Product, ProductCategory } from '../types';
 import {
   BRINJAL_SEED_IMAGE,
+  INITIAL_PRODUCTS,
   MARIGOLD_IMAGE_CREDIT,
   MARIGOLD_SEED_IMAGE,
 } from '../data/products';
 
 const LEGACY_STORAGE_KEY = 'ceylon_seeds_inventory';
+const SYNC_DEVICE_ID_KEY = 'ceylon_seeds_sync_device_id';
 
 const LEGACY_IMAGE_URLS: Record<string, string[]> = {
   'prod-brinjal-thinnavely': [
     'https://images.unsplash.com/photo-1615485290382-441e4d049cb5',
     'https://images.unsplash.com/photo-1590301157890-4810ed352733',
+    'https://www.nationalgardens.in/296-large_default/indian-brinjal-seeds.jpg',
   ],
   'prod-marigold-lanka-gold': [
     'https://images.unsplash.com/photo-1588691500331-f1ceacb31fc6',
     'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed',
+    'https://bhoolokaswargam.com/wp-content/uploads/2025/12/Untitled-design-81.webp',
   ],
 };
 
@@ -125,7 +129,12 @@ class SeedService {
       if (!Array.isArray(parsed)) {
         throw new Error('The saved browser inventory is not a product list.');
       }
-      products = normalizeLegacyInventory(parsed as Product[]);
+      const savedProducts = normalizeLegacyInventory(parsed as Product[]);
+      const defaultProducts = new Map(INITIAL_PRODUCTS.map((product) => [product.id, product]));
+      products = savedProducts.filter((product) => {
+        const defaultProduct = defaultProducts.get(product.id);
+        return !defaultProduct || JSON.stringify(product) !== JSON.stringify(defaultProduct);
+      });
     } catch (error) {
       throw new Error(
         `Could not import the saved browser inventory: ${
@@ -134,9 +143,15 @@ class SeedService {
       );
     }
 
+    let deviceId = localStorage.getItem(SYNC_DEVICE_ID_KEY);
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem(SYNC_DEVICE_ID_KEY, deviceId);
+    }
+
     const result = await this.request<{ imported: boolean }>('/api/admin/import-legacy', {
       method: 'POST',
-      body: JSON.stringify({ products }),
+      body: JSON.stringify({ deviceId, products }),
     }, token);
     return result.imported;
   }

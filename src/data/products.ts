@@ -8,8 +8,17 @@ export const CATEGORIES: ProductCategory[] = [
   'Herbal Seeds',
   'Other Agricultural Seeds',
   'Fertilizer',
+  'Granule Fertilizer',
+  'Liquid Fertilizer',
+  'Organic Fertilizer',
   'Tools',
   'Other',
+];
+
+export const FERTILIZER_CATEGORIES: ProductCategory[] = [
+  'Granule Fertilizer',
+  'Liquid Fertilizer',
+  'Organic Fertilizer',
 ];
 
 export const BRINJAL_SEED_IMAGE =

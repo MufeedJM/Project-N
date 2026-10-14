@@ -6,6 +6,9 @@ export type ProductCategory =
   | 'Herbal Seeds'
   | 'Other Agricultural Seeds'
   | 'Fertilizer'
+  | 'Granule Fertilizer'
+  | 'Liquid Fertilizer'
+  | 'Organic Fertilizer'
   | 'Tools'
   | 'Other';
 

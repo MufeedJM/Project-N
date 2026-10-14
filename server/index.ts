@@ -64,6 +64,45 @@ app.use('/uploads', express.static(uploadDirectory, { maxAge: '1d' }));
 const sessions = new Map<string, number>();
 const sessionLifetimeMs = 8 * 60 * 60 * 1000;
 
+const legacyImageUrls: Record<string, string[]> = {
+  'prod-brinjal-thinnavely': [
+    'https://images.unsplash.com/photo-1615485290382-441e4d049cb5',
+    'https://images.unsplash.com/photo-1590301157890-4810ed352733',
+    'https://www.nationalgardens.in/296-large_default/indian-brinjal-seeds.jpg',
+  ],
+  'prod-marigold-lanka-gold': [
+    'https://images.unsplash.com/photo-1588691500331-f1ceacb31fc6',
+    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed',
+    'https://bhoolokaswargam.com/wp-content/uploads/2025/12/Untitled-design-81.webp',
+  ],
+};
+
+const normalizeLegacyProductImage = (product: Product): Product => {
+  const badUrls = legacyImageUrls[product.id];
+  if (!badUrls) return product;
+
+  const replacement =
+    product.id === 'prod-brinjal-thinnavely' ? BRINJAL_SEED_IMAGE : MARIGOLD_SEED_IMAGE;
+  const isLegacyImage = (image: string) => badUrls.some((url) => image.startsWith(url));
+  const image = isLegacyImage(product.image) ? replacement : product.image;
+  const gallery = (product.gallery ?? []).map((galleryImage) =>
+    isLegacyImage(galleryImage) ? replacement : galleryImage
+  );
+  const hasLegacyImage =
+    image !== product.image ||
+    gallery.some((galleryImage, index) => galleryImage !== product.gallery?.[index]);
+
+  if (!hasLegacyImage) return product;
+  return {
+    ...product,
+    image,
+    gallery,
+    ...(product.id === 'prod-marigold-lanka-gold'
+      ? { imageCredit: product.imageCredit ?? MARIGOLD_IMAGE_CREDIT }
+      : {}),
+  };
+};
+
 const passwordMatches = (provided: string, expected: string) => {
   const providedBytes = Buffer.from(provided);
   const expectedBytes = Buffer.from(expected);
@@ -96,6 +135,11 @@ const saveProduct = (product: Product) => {
     .run(product.id, JSON.stringify(product));
 };
 
+for (const product of readProducts()) {
+  const normalized = normalizeLegacyProductImage(product);
+  if (normalized !== product) saveProduct(normalized);
+}
+
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok' });
 });
@@ -118,9 +162,16 @@ app.post('/api/admin/login', (request, response) => {
 });
 
 app.post('/api/admin/import-legacy', requireAdmin, (request, response) => {
+  const { deviceId } = request.body as { deviceId?: unknown };
+  if (typeof deviceId !== 'string' || !/^[0-9a-f-]{36}$/i.test(deviceId)) {
+    response.status(400).json({ error: 'A valid browser sync ID is required.' });
+    return;
+  }
+
+  const importKey = `legacy_inventory_imported:${deviceId}`;
   const importedSetting = database
-    .prepare("SELECT value FROM settings WHERE key = 'legacy_inventory_imported'")
-    .get() as { value: string } | undefined;
+    .prepare('SELECT value FROM settings WHERE key = ?')
+    .get(importKey) as { value: string } | undefined;
 
   if (importedSetting?.value === 'true') {
     response.json({ imported: false });
@@ -143,52 +194,19 @@ app.post('/api/admin/import-legacy', requireAdmin, (request, response) => {
     return;
   }
 
-  if (legacyProducts.length === 0) {
-    response.json({ imported: false });
-    return;
-  }
+  const products = (legacyProducts as Product[]).map(normalizeLegacyProductImage);
 
-  const legacyImageUrls: Record<string, string[]> = {
-    'prod-brinjal-thinnavely': [
-      'https://images.unsplash.com/photo-1615485290382-441e4d049cb5',
-      'https://images.unsplash.com/photo-1590301157890-4810ed352733',
-    ],
-    'prod-marigold-lanka-gold': [
-      'https://images.unsplash.com/photo-1588691500331-f1ceacb31fc6',
-      'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed',
-    ],
-  };
-  const products = (legacyProducts as Product[]).map((product) => {
-    const badUrls = legacyImageUrls[product.id];
-    if (!badUrls) return product;
-
-    const correctImage =
-      product.id === 'prod-brinjal-thinnavely' ? BRINJAL_SEED_IMAGE : MARIGOLD_SEED_IMAGE;
-    const isLegacyImage = (image: string) => badUrls.some((url) => image.startsWith(url));
-    const image = isLegacyImage(product.image) ? correctImage : product.image;
-    const gallery = product.gallery.map((galleryImage) =>
-      isLegacyImage(galleryImage) ? correctImage : galleryImage
-    );
-    return {
-      ...product,
-      image,
-      gallery,
-      ...(product.id === 'prod-marigold-lanka-gold'
-        ? { imageCredit: product.imageCredit ?? MARIGOLD_IMAGE_CREDIT }
-        : {}),
-    };
-  });
-
-  const replaceProducts = database.prepare('INSERT INTO products (id, data) VALUES (?, ?)');
+  const upsertProduct = database.prepare(
+    'INSERT INTO products (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data'
+  );
   database.exec('BEGIN');
   try {
-    database.exec('DELETE FROM products');
     for (const product of products) {
-      replaceProducts.run(product.id, JSON.stringify(product));
+      upsertProduct.run(product.id, JSON.stringify(product));
     }
     database
-      .prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('legacy_inventory_imported', 'true')")
-      .run();
+      .prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
+      .run(importKey, 'true');
     database.exec('COMMIT');
   } catch (error) {
     database.exec('ROLLBACK');

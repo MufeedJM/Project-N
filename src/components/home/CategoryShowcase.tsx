@@ -22,19 +22,19 @@ const STORE_CATEGORY_ITEMS: StoreCategoryItem[] = [
     title: 'Liquid Fertilizer',
     subtitle: 'Liquid plant nutrition',
     image: 'https://mtroyal.com.tr/en/wp-content/uploads/2025/04/Liquid-Fertilizer-Supplier.jpg',
-    category: 'Fertilizer',
+    category: 'Liquid Fertilizer',
   },
   {
     title: 'Granule Fertilizer',
     subtitle: 'Granular plant nutrition',
     image: 'https://everagro.com/wp-content/uploads/2026/05/granular-fertilizer-banner.jpg',
-    category: 'Fertilizer',
+    category: 'Granule Fertilizer',
   },
   {
     title: 'Organic Fertilizers',
     subtitle: 'Organic soil and plant care',
     image: 'https://cdn.shopify.com/s/files/1/0569/9675/7697/files/what-is-plant-fertilizer-made-of_1024x1024.jpg?v=1655088556',
-    category: 'Fertilizer',
+    category: 'Organic Fertilizer',
   },
   {
     title: 'Gardening Tools',
