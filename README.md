@@ -1,32 +1,38 @@
-# React + TypeScript + Vite
+# Project N
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## Run locally
 
-Currently, two official plugins are available:
+Use Node.js 24 or newer. The development command starts the Vite storefront and the Node API:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The API reads admin credentials from `.env.local`. Copy `.env.example` to `.env.local` and set a
+private username and password there before starting the server. Do not commit `.env.local`.
+
+## Shared inventory and product photos
+
+Product inventory is stored in the SQLite database at `server-data/inventory.sqlite`. Photos uploaded
+from the admin inventory screen are stored under `server-data/uploads` and served by the Node API.
+Both locations are ignored by Git and must be kept on persistent storage.
+
+On the first admin sign-in, the server imports the existing inventory from that browser once. Sign in
+from the browser that contains the latest admin edits first, then reload the storefront in other
+browsers to see the shared catalog and uploaded photos. Later sign-ins do not overwrite the shared
+database with an older browser copy.
+
+To run the built application with the API:
+
+```powershell
+npm run build
+$env:NODE_ENV = "production"
+npm start
+```
+
+Deploy the app on a Node.js host with a persistent disk for `server-data`, and configure
+`ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `PORT` as server environment variables. Static-only hosting
+does not run the API and cannot share admin edits or uploaded files between browsers.
+
+Orders, inquiries, and carts continue to use browser-local storage.

@@ -1,4 +1,4 @@
-import { Product, ProductCategory } from '../types';
+import type { Product, ProductCategory } from '../types/index.js';
 
 export const CATEGORIES: ProductCategory[] = [
   'Vegetable Seeds',
@@ -11,6 +11,20 @@ export const CATEGORIES: ProductCategory[] = [
   'Tools',
   'Other',
 ];
+
+export const BRINJAL_SEED_IMAGE =
+  'https://images.unsplash.com/photo-1615484477201-9f4953340fab?auto=format&fit=crop&w=800&q=80';
+
+export const MARIGOLD_SEED_IMAGE =
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/62/French_Marigold_--_October_Birthday_Flower_--_Tagetes_patula.jpg/960px-French_Marigold_--_October_Birthday_Flower_--_Tagetes_patula.jpg';
+
+export const MARIGOLD_IMAGE_CREDIT = {
+  name: 'Jim Evans',
+  sourceUrl:
+    'https://commons.wikimedia.org/wiki/File:French_Marigold_--_October_Birthday_Flower_--_Tagetes_patula.jpg',
+  license: 'CC BY-SA 4.0',
+  licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+};
 
 export const SRI_LANKA_DISTRICTS = [
   'Ampara',
@@ -148,11 +162,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     currency: 'LKR',
     quantity: 60,
     unit: 'Seeds',
-    image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&w=1200&q=80',
-    ],
+    image: BRINJAL_SEED_IMAGE,
+    gallery: [BRINJAL_SEED_IMAGE],
     description: 'Favorite traditional Sri Lankan brinjal cultivar featuring deep violet, elongated fruits with sweet white flesh and minimal seeds. High resistance to bacterial wilt and shoot borers under tropical humidity.',
     germinationRate: 89,
     growingConditions: {
@@ -389,11 +400,9 @@ export const INITIAL_PRODUCTS: Product[] = [
     currency: 'LKR',
     quantity: 75,
     unit: 'Seeds',
-    image: 'https://images.unsplash.com/photo-1588691500331-f1ceacb31fc6?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1588691500331-f1ceacb31fc6?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?auto=format&fit=crop&w=1200&q=80',
-    ],
+    image: MARIGOLD_SEED_IMAGE,
+    imageCredit: MARIGOLD_IMAGE_CREDIT,
+    gallery: [MARIGOLD_SEED_IMAGE],
     description: 'Dense ball-shaped vibrant golden blooms. Dual purpose: magnificent ornamental beauty and an essential companion crop that naturally repels root-knot nematodes and attracts beneficial pollinators in vegetable fields.',
     germinationRate: 93,
     growingConditions: {

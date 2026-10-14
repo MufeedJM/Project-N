@@ -131,6 +131,29 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
             </div>
           )}
 
+          {product.imageCredit && (
+            <p className="text-[11px] text-charcoal-800/70">
+              Photo:{' '}
+              <a
+                href={product.imageCredit.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-agro-800"
+              >
+                {product.imageCredit.name}
+              </a>
+              {' · '}
+              <a
+                href={product.imageCredit.licenseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-agro-800"
+              >
+                {product.imageCredit.license}
+              </a>
+            </p>
+          )}
+
           {/* Trust Guarantees */}
           <div className="grid grid-cols-2 gap-3 pt-4 border-t border-earth-100 text-xs text-charcoal-800">
             <div className="flex items-center gap-2 p-3 rounded-xl bg-earth-50 border border-earth-200/60">

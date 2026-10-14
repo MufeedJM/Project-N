@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useStore } from '../../context/StoreContext';
 import { seedService } from '../../services/seedService';
 import { CATEGORIES } from '../../data/products';
 import { ProductCategory } from '../../types';
+import type { Product } from '../../types';
 import { ProductCard } from './ProductCard';
 import {
   Search,
@@ -26,20 +27,40 @@ export const ProductCatalog: React.FC = () => {
 
   const [govtCertifiedOnly, setGovtCertifiedOnly] = React.useState(false);
   const [inStockOnly, setInStockOnly] = React.useState(false);
+  const [filteredProducts, setFilteredProducts] = React.useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = React.useState(true);
+  const [productLoadError, setProductLoadError] = React.useState('');
 
-  // Compute filtered & sorted products
-  const filteredProducts = useMemo(() => {
-    let list = seedService.search(searchQuery, selectedCategory, sortBy);
+  React.useEffect(() => {
+    let isCurrentRequest = true;
 
-    if (govtCertifiedOnly) {
-      list = list.filter((p) => p.departmentApproved);
-    }
+    const loadProducts = async () => {
+      setIsLoadingProducts(true);
+      setProductLoadError('');
+      try {
+        let list = await seedService.search(searchQuery, selectedCategory, sortBy);
+        if (govtCertifiedOnly) {
+          list = list.filter((product) => product.departmentApproved);
+        }
+        if (inStockOnly) {
+          list = list.filter((product) => product.stock > 0);
+        }
+        if (isCurrentRequest) setFilteredProducts(list);
+      } catch (error) {
+        if (isCurrentRequest) {
+          setProductLoadError(
+            error instanceof Error ? error.message : 'Products could not be loaded from the server.'
+          );
+        }
+      } finally {
+        if (isCurrentRequest) setIsLoadingProducts(false);
+      }
+    };
 
-    if (inStockOnly) {
-      list = list.filter((p) => p.stock > 0);
-    }
-
-    return list;
+    void loadProducts();
+    return () => {
+      isCurrentRequest = false;
+    };
   }, [searchQuery, selectedCategory, sortBy, govtCertifiedOnly, inStockOnly]);
 
   const handleResetFilters = () => {
@@ -70,7 +91,13 @@ export const ProductCatalog: React.FC = () => {
 
         {/* Results Counter */}
         <div className="text-xs sm:text-sm text-charcoal-800/70 font-medium">
-          Showing <span className="font-bold text-agro-900">{filteredProducts.length}</span> seed varieties
+          {isLoadingProducts ? (
+            'Loading products…'
+          ) : (
+            <>
+              Showing <span className="font-bold text-agro-900">{filteredProducts.length}</span> seed varieties
+            </>
+          )}
         </div>
       </div>
 
@@ -180,7 +207,18 @@ export const ProductCatalog: React.FC = () => {
       </div>
 
       {/* Products Grid */}
-      {filteredProducts.length > 0 ? (
+      {productLoadError ? (
+        <div
+          role="alert"
+          className="mx-auto max-w-lg rounded-3xl border border-rose-200 bg-rose-50 px-6 py-12 text-center text-sm text-rose-800"
+        >
+          Could not load products: {productLoadError}
+        </div>
+      ) : isLoadingProducts ? (
+        <div role="status" className="py-16 text-center text-sm font-medium text-charcoal-800/70">
+          Loading products…
+        </div>
+      ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />

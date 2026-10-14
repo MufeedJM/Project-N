@@ -95,6 +95,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {product.category}
           </span>
         </div>
+        {product.imageCredit && (
+          <div className="absolute bottom-2 right-2 z-10 rounded-md bg-black/65 px-2 py-1 text-[9px] text-white backdrop-blur-sm">
+            Photo{' '}
+            <a
+              href={product.imageCredit.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(event) => event.stopPropagation()}
+              className="underline"
+            >
+              {product.imageCredit.name}
+            </a>
+            {' · '}
+            <a
+              href={product.imageCredit.licenseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(event) => event.stopPropagation()}
+              className="underline"
+            >
+              {product.imageCredit.license}
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Card Content Details */}

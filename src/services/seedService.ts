@@ -1,126 +1,176 @@
-import { Product, ProductCategory } from '../types';
-import { INITIAL_PRODUCTS } from '../data/products';
+import type { Product, ProductCategory } from '../types';
+import {
+  BRINJAL_SEED_IMAGE,
+  MARIGOLD_IMAGE_CREDIT,
+  MARIGOLD_SEED_IMAGE,
+} from '../data/products';
 
-const STORAGE_KEY = 'ceylon_seeds_inventory';
+const LEGACY_STORAGE_KEY = 'ceylon_seeds_inventory';
+
+const LEGACY_IMAGE_URLS: Record<string, string[]> = {
+  'prod-brinjal-thinnavely': [
+    'https://images.unsplash.com/photo-1615485290382-441e4d049cb5',
+    'https://images.unsplash.com/photo-1590301157890-4810ed352733',
+  ],
+  'prod-marigold-lanka-gold': [
+    'https://images.unsplash.com/photo-1588691500331-f1ceacb31fc6',
+    'https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed',
+  ],
+};
+
+const normalizeLegacyInventory = (products: Product[]): Product[] =>
+  products.map((product) => {
+    const badUrls = LEGACY_IMAGE_URLS[product.id];
+    if (!badUrls) return product;
+
+    const replacement =
+      product.id === 'prod-brinjal-thinnavely' ? BRINJAL_SEED_IMAGE : MARIGOLD_SEED_IMAGE;
+    const isLegacyImage = (image: string) => badUrls.some((url) => image.startsWith(url));
+    return {
+      ...product,
+      image: isLegacyImage(product.image) ? replacement : product.image,
+      gallery: (product.gallery ?? []).map((image) => (isLegacyImage(image) ? replacement : image)),
+      ...(product.id === 'prod-marigold-lanka-gold'
+        ? { imageCredit: product.imageCredit ?? MARIGOLD_IMAGE_CREDIT }
+        : {}),
+    };
+  });
 
 class SeedService {
-  private getStoredProducts(): Product[] {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error('Failed to read products from localStorage', e);
+  private async request<T>(
+    path: string,
+    options: RequestInit = {},
+    token?: string
+  ): Promise<T> {
+    const headers = new Headers(options.headers);
+    if (options.body && !(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
     }
-    // Initialize default seed collection
-    this.saveProducts(INITIAL_PRODUCTS);
-    return INITIAL_PRODUCTS;
-  }
+    if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  private saveProducts(products: Product[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    } catch (e) {
-      console.error('Failed to save products to localStorage', e);
+    const response = await fetch(path, { ...options, headers });
+    if (!response.ok) {
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(result?.error ?? `Request failed with status ${response.status}.`);
     }
+    if (response.status === 204) return undefined as T;
+    return (await response.json()) as T;
   }
 
-  public getAll(): Product[] {
-    return this.getStoredProducts();
+  public getAll(): Promise<Product[]> {
+    return this.request<Product[]>('/api/products');
   }
 
-  public getById(id: string): Product | undefined {
-    return this.getStoredProducts().find((p) => p.id === id);
-  }
-
-  public getByCategory(category: ProductCategory): Product[] {
-    return this.getStoredProducts().filter((p) => p.category === category);
-  }
-
-  public getFeatured(): Product[] {
-    return this.getStoredProducts().filter((p) => p.featured);
-  }
-
-  public getBestSellers(): Product[] {
-    return this.getStoredProducts().filter((p) => p.bestSeller);
-  }
-
-  public search(
+  public async search(
     query: string,
     category?: ProductCategory | 'All',
     sortBy?: 'price-asc' | 'price-desc' | 'popular' | 'newest',
     maxPrice?: number
-  ): Product[] {
-    let list = this.getStoredProducts();
+  ): Promise<Product[]> {
+    let list = await this.getAll();
 
     if (category && category !== 'All') {
-      list = list.filter((p) => p.category === category);
+      list = list.filter((product) => product.category === category);
     }
 
     if (query.trim()) {
-      const q = query.toLowerCase().trim();
+      const normalizedQuery = query.toLowerCase().trim();
       list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.variety.toLowerCase().includes(q) ||
-          p.cropType.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
+        (product) =>
+          product.name.toLowerCase().includes(normalizedQuery) ||
+          product.variety.toLowerCase().includes(normalizedQuery) ||
+          product.cropType.toLowerCase().includes(normalizedQuery) ||
+          product.description.toLowerCase().includes(normalizedQuery) ||
+          product.category.toLowerCase().includes(normalizedQuery)
       );
     }
 
     if (maxPrice !== undefined && maxPrice > 0) {
-      list = list.filter((p) => p.price <= maxPrice);
+      list = list.filter((product) => product.price <= maxPrice);
     }
 
-    if (sortBy) {
-      switch (sortBy) {
-        case 'price-asc':
-          list.sort((a, b) => a.price - b.price);
-          break;
-        case 'price-desc':
-          list.sort((a, b) => b.price - a.price);
-          break;
-        case 'newest':
-          list.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
-          break;
-        case 'popular':
-        default:
-          list.sort((a, b) => (b.bestSeller ? 1 : 0) - (a.bestSeller ? 1 : 0));
-          break;
-      }
+    switch (sortBy) {
+      case 'price-asc':
+        list.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        list.sort((a, b) => b.price - a.price);
+        break;
+      case 'newest':
+        list.sort((a, b) => Number(b.isNew) - Number(a.isNew));
+        break;
+      case 'popular':
+      default:
+        list.sort((a, b) => Number(b.bestSeller) - Number(a.bestSeller));
+        break;
     }
 
     return list;
   }
 
-  // Admin extension methods - ready for full CRUD admin panel
-  public addProduct(product: Product): Product {
-    const list = this.getStoredProducts();
-    const updated = [product, ...list];
-    this.saveProducts(updated);
-    return product;
+  public login(username: string, password: string): Promise<{ token: string }> {
+    return this.request('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
   }
 
-  public updateProduct(product: Product): Product {
-    const list = this.getStoredProducts();
-    const index = list.findIndex((p) => p.id === product.id);
-    if (index !== -1) {
-      list[index] = product;
-      this.saveProducts(list);
+  public async importLegacyInventory(token: string): Promise<boolean> {
+    const savedInventory = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!savedInventory) return false;
+
+    let products: Product[];
+    try {
+      const parsed: unknown = JSON.parse(savedInventory);
+      if (!Array.isArray(parsed)) {
+        throw new Error('The saved browser inventory is not a product list.');
+      }
+      products = normalizeLegacyInventory(parsed as Product[]);
+    } catch (error) {
+      throw new Error(
+        `Could not import the saved browser inventory: ${
+          error instanceof Error ? error.message : 'invalid local data'
+        }`
+      );
     }
-    return product;
+
+    const result = await this.request<{ imported: boolean }>('/api/admin/import-legacy', {
+      method: 'POST',
+      body: JSON.stringify({ products }),
+    }, token);
+    return result.imported;
   }
 
-  public deleteProduct(id: string): void {
-    const list = this.getStoredProducts();
-    const filtered = list.filter((p) => p.id !== id);
-    this.saveProducts(filtered);
+  public addProduct(product: Product, token: string): Promise<Product> {
+    return this.request('/api/products', {
+      method: 'POST',
+      body: JSON.stringify(product),
+    }, token);
   }
 
-  public resetToDefaults(): void {
-    this.saveProducts(INITIAL_PRODUCTS);
+  public updateProduct(product: Product, token: string): Promise<Product> {
+    return this.request(`/api/products/${encodeURIComponent(product.id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(product),
+    }, token);
+  }
+
+  public deleteProduct(id: string, token: string): Promise<void> {
+    return this.request(`/api/products/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+  }
+
+  public resetToDefaults(token: string): Promise<Product[]> {
+    return this.request('/api/admin/catalog/reset', { method: 'POST' }, token);
+  }
+
+  public async uploadImage(file: File, token: string): Promise<string> {
+    const body = new FormData();
+    body.append('image', file);
+    const result = await this.request<{ url: string }>('/api/admin/uploads', {
+      method: 'POST',
+      body,
+    }, token);
+    return result.url;
   }
 }
 

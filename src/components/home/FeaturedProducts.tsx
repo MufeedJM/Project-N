@@ -2,13 +2,31 @@ import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { seedService } from '../../services/seedService';
 import { ProductCard } from '../catalog/ProductCard';
+import type { Product } from '../../types';
 import { ArrowRight, Sparkles, TrendingUp, Award, Clock } from 'lucide-react';
 
 export const FeaturedProducts: React.FC = () => {
   const { navigateToCatalog } = useStore();
   const [activeTab, setActiveTab] = useState<'featured' | 'bestsellers' | 'new'>('featured');
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loadError, setLoadError] = useState('');
 
-  const allProducts = seedService.getAll();
+  React.useEffect(() => {
+    let isCurrentRequest = true;
+    void seedService
+      .getAll()
+      .then((products) => {
+        if (isCurrentRequest) setAllProducts(products);
+      })
+      .catch((error: unknown) => {
+        if (isCurrentRequest) {
+          setLoadError(error instanceof Error ? error.message : 'Products could not be loaded from the server.');
+        }
+      });
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, []);
 
   const displayedProducts = React.useMemo(() => {
     if (activeTab === 'bestsellers') {
@@ -79,11 +97,17 @@ export const FeaturedProducts: React.FC = () => {
         </div>
 
         {/* 4 Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {displayedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {loadError ? (
+          <p role="alert" className="py-8 text-center text-sm text-rose-700">
+            Could not load featured products: {loadError}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {displayedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
 
         {/* Bottom CTA to view all */}
         <div className="mt-12 text-center">

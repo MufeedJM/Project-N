@@ -28,6 +28,12 @@ export interface Product {
   unit: string; // e.g. "Seeds" or "g"
   weight?: number; // shipping weight in kg for courier calculation; hidden from storefront display
   image: string;
+  imageCredit?: {
+    name: string;
+    sourceUrl: string;
+    license: string;
+    licenseUrl: string;
+  };
   gallery: string[];
   description: string;
   germinationRate: number; // e.g. 92%

@@ -22,19 +22,74 @@ import {
   CreditCard,
   MessageSquare,
   Sparkles,
+  LockKeyhole,
+  LogOut,
 } from 'lucide-react';
 
 export const AdminPreview: React.FC = () => {
   const { navigateToHome, addToast } = useStore();
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminToken, setAdminToken] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState<
     'inventory' | 'fertilizer' | 'tools' | 'orders' | 'inquiries' | 'gateway'
   >('inventory');
 
   // Live state from services
-  const [products, setProducts] = useState<Product[]>(() => seedService.getAll());
+  const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>(() => orderService.getAll());
   const [inquiries, setInquiries] = useState<QuestionInquiry[]>(() => inquiryService.getAll());
+
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    try {
+      const { token } = await seedService.login(username, password);
+      let importError: unknown;
+      try {
+        await seedService.importLegacyInventory(token);
+      } catch (error) {
+        importError = error;
+      }
+
+      setProducts(await seedService.getAll());
+      setAdminToken(token);
+      setIsAuthenticated(true);
+      setLoginError('');
+      setPassword('');
+      if (importError) {
+        addToast(
+          'Existing Inventory Not Imported',
+          importError instanceof Error ? importError.message : 'The saved inventory could not be imported.',
+          'error'
+        );
+      }
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : 'Unable to sign in to the admin service.');
+      setPassword('');
+    }
+  };
+
+  const requireAdminToken = () => {
+    if (!adminToken) throw new Error('Admin sign-in expired. Please sign in again.');
+    return adminToken;
+  };
+
+  const uploadProductPhoto = async (file: File) => {
+    try {
+      return await seedService.uploadImage(file, requireAdminToken());
+    } catch (error) {
+      addToast(
+        'Photo Upload Failed',
+        error instanceof Error ? error.message : 'The photo could not be uploaded.',
+        'error'
+      );
+      return null;
+    }
+  };
 
   const inventoryProducts = products.filter(
     (prod) => prod.inventoryType === 'Seed' || (!prod.inventoryType && prod.category !== 'Fertilizer' && prod.category !== 'Tools')
@@ -132,7 +187,7 @@ export const AdminPreview: React.FC = () => {
     setTempGerminationRate(prod.germinationRate);
   };
 
-  const saveProductEdit = (product: Product) => {
+  const saveProductEdit = async (product: Product) => {
     const image = tempImage.trim();
     const variety = tempVariety.trim();
     const unit = tempUnit.trim();
@@ -176,6 +231,7 @@ export const AdminPreview: React.FC = () => {
     const updated = {
       ...product,
       image,
+      imageCredit: image === product.image ? product.imageCredit : undefined,
       gallery: [
         image,
         ...product.gallery.filter(
@@ -192,13 +248,21 @@ export const AdminPreview: React.FC = () => {
       stock: tempStock,
       germinationRate: isNonSeedInventory ? 0 : tempGerminationRate,
     };
-    seedService.updateProduct(updated);
-    setProducts(seedService.getAll());
-    setEditingProductId(null);
-    addToast('Updated', `${product.name} inventory details updated.`, 'success');
+    try {
+      await seedService.updateProduct(updated, requireAdminToken());
+      setProducts(await seedService.getAll());
+      setEditingProductId(null);
+      addToast('Updated', `${product.name} inventory details updated.`, 'success');
+    } catch (error) {
+      addToast(
+        'Update Failed',
+        error instanceof Error ? error.message : 'The product could not be updated.',
+        'error'
+      );
+    }
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     const name = newProductForm.name.trim();
     const variety = newProductForm.variety.trim();
     const unit = newProductForm.unit.trim();
@@ -286,22 +350,38 @@ export const AdminPreview: React.FC = () => {
       inventoryType,
     };
 
-    seedService.addProduct(product);
-    setProducts(seedService.getAll());
-    setShowAddProductForm(false);
-    resetNewProductForm();
-    addToast('Product Added', `${name} was added to the inventory.`, 'success');
+    try {
+      await seedService.addProduct(product, requireAdminToken());
+      setProducts(await seedService.getAll());
+      setShowAddProductForm(false);
+      resetNewProductForm();
+      addToast('Product Added', `${name} was added to the inventory.`, 'success');
+    } catch (error) {
+      addToast(
+        'Product Add Failed',
+        error instanceof Error ? error.message : 'The product could not be added.',
+        'error'
+      );
+    }
   };
 
-  const handleDeleteProduct = (product: Product) => {
+  const handleDeleteProduct = async (product: Product) => {
     const confirmed = window.confirm(`Delete ${product.name} (${product.variety}) from the catalog?`);
     if (!confirmed) {
       return;
     }
 
-    seedService.deleteProduct(product.id);
-    setProducts(seedService.getAll());
-    addToast('Product Deleted', `${product.name} removed from the catalog.`, 'info');
+    try {
+      await seedService.deleteProduct(product.id, requireAdminToken());
+      setProducts(await seedService.getAll());
+      addToast('Product Deleted', `${product.name} removed from the catalog.`, 'info');
+    } catch (error) {
+      addToast(
+        'Product Delete Failed',
+        error instanceof Error ? error.message : 'The product could not be deleted.',
+        'error'
+      );
+    }
   };
 
   const handleStatusChange = (orderId: string, status: Order['orderStatus']) => {
@@ -310,11 +390,90 @@ export const AdminPreview: React.FC = () => {
     addToast('Order Status Updated', `Order ${orderId} marked as ${status}.`, 'info');
   };
 
-  const handleResetCatalog = () => {
-    seedService.resetToDefaults();
-    setProducts(seedService.getAll());
-    addToast('Reset to Defaults', 'Inventory restored to original Sri Lankan seed catalog.', 'info');
+  const handleResetCatalog = async () => {
+    try {
+      setProducts(await seedService.resetToDefaults(requireAdminToken()));
+      addToast('Reset to Defaults', 'Inventory restored to original Sri Lankan seed catalog.', 'info');
+    } catch (error) {
+      addToast(
+        'Catalog Reset Failed',
+        error instanceof Error ? error.message : 'The catalog could not be reset.',
+        'error'
+      );
+    }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-agro-pattern flex items-center justify-center px-4 py-12">
+        <section className="w-full max-w-md rounded-3xl border border-agro-100 bg-white p-8 shadow-xl sm:p-10">
+          <button
+            type="button"
+            onClick={navigateToHome}
+            className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-agro-800 transition hover:text-agro-600"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Storefront
+          </button>
+
+          <div className="mb-7 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-agro-100 text-agro-800">
+              <LockKeyhole className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-charcoal-900">Admin sign in</h1>
+              <p className="mt-1 text-sm text-charcoal-800/70">Enter your admin credentials to continue.</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label htmlFor="admin-username" className="mb-1.5 block text-sm font-semibold text-charcoal-900">
+                Username
+              </label>
+              <input
+                id="admin-username"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                className="w-full rounded-xl border border-earth-300 bg-white px-4 py-3 text-charcoal-900 outline-none transition focus:border-agro-600 focus:ring-2 focus:ring-agro-600/20"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="admin-password" className="mb-1.5 block text-sm font-semibold text-charcoal-900">
+                Password
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-xl border border-earth-300 bg-white px-4 py-3 text-charcoal-900 outline-none transition focus:border-agro-600 focus:ring-2 focus:ring-agro-600/20"
+                required
+              />
+            </div>
+
+            {loginError && (
+              <p role="alert" className="text-sm font-medium text-red-700">
+                {loginError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-agro-800 px-4 py-3 font-bold text-white transition hover:bg-agro-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-agro-800"
+            >
+              Sign in
+            </button>
+          </form>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-earth-50/70 pb-20">
@@ -344,12 +503,28 @@ export const AdminPreview: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={navigateToHome}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-agro-700 hover:bg-agro-600 text-white text-xs font-bold transition"
-          >
-            <span>Back to Storefront</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={navigateToHome}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-agro-700 hover:bg-agro-600 text-white text-xs font-bold transition"
+            >
+              <span>Back to Storefront</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsAuthenticated(false);
+                setAdminToken(null);
+                setUsername('');
+                setPassword('');
+                setLoginError('');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-white text-xs font-bold transition"
+              aria-label="Log out of admin"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Log out</span>
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -656,6 +831,23 @@ export const AdminPreview: React.FC = () => {
                       className="mt-1 w-full px-3 py-2 border border-earth-200 rounded-xl bg-earth-50/40 text-charcoal-900"
                       placeholder="https://example.com/image.jpg"
                     />
+                    <span className="mt-2 block">Or upload an image (JPG, PNG, WebP or GIF; max 5 MB)</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      aria-label="Upload product photo"
+                      onChange={async (event) => {
+                        const input = event.currentTarget;
+                        const file = input.files?.[0];
+                        if (!file) return;
+                        const uploadedUrl = await uploadProductPhoto(file);
+                        if (uploadedUrl) {
+                          setNewProductForm((current) => ({ ...current, image: uploadedUrl }));
+                        }
+                        input.value = '';
+                      }}
+                      className="mt-1 block w-full text-xs text-charcoal-800"
+                    />
                   </label>
 
                   <label className="md:col-span-2 xl:col-span-3 text-xs font-semibold text-charcoal-800">
@@ -751,6 +943,20 @@ export const AdminPreview: React.FC = () => {
                                       aria-label={`${prod.name} photo URL`}
                                       placeholder="Photo URL"
                                       className="mt-1 w-48 px-2 py-1 border rounded bg-white"
+                                    />
+                                    <input
+                                      type="file"
+                                      accept="image/jpeg,image/png,image/webp,image/gif"
+                                      aria-label={`Upload ${prod.name} photo`}
+                                      onChange={async (event) => {
+                                        const input = event.currentTarget;
+                                        const file = input.files?.[0];
+                                        if (!file) return;
+                                        const uploadedUrl = await uploadProductPhoto(file);
+                                        if (uploadedUrl) setTempImage(uploadedUrl);
+                                        input.value = '';
+                                      }}
+                                      className="mt-1 block w-48 text-[10px]"
                                     />
                                     <textarea
                                       value={tempDescription}
